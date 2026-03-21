@@ -1,9 +1,5 @@
 package com.aurelian.app
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.sp
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,13 +10,16 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(onNavigateToSettings: () -> Unit, onNavigateToReferral: () -> Unit, onNavigateToSubscription: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,7 +66,7 @@ fun ProfileScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             OutlinedButton(
@@ -87,6 +86,35 @@ fun ProfileScreen() {
                 Text("心动", letterSpacing = 1.5.sp)
             }
         }
+
+        // Extra Management Options
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onNavigateToSubscription,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B1B1B), contentColor = Gold),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("尊享会籍管理", fontWeight = FontWeight.Bold)
+            }
+            Button(
+                onClick = onNavigateToReferral,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B1B1B), contentColor = Gold),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("内推引荐通道", fontWeight = FontWeight.Bold)
+            }
+            Button(
+                onClick = onNavigateToSettings,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B1B1B), contentColor = Silver),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("偏好设置", fontWeight = FontWeight.Bold)
+            }
+        }
+
         Spacer(modifier = Modifier.height(80.dp))
     }
 }

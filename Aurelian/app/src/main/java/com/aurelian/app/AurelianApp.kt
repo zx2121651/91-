@@ -1,9 +1,5 @@
 package com.aurelian.app
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.sp
-
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -15,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -23,11 +20,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Discover : Screen("discover", "Discover", Icons.Default.Home)
-    object Matches : Screen("matches", "Matches", Icons.Default.Favorite)
-    object Messages : Screen("messages", "Messages", Icons.Default.Email)
-    object Events : Screen("events", "Soirées", Icons.Default.Person) // Using Person as a placeholder icon
-    object Profile : Screen("profile", "Profile", Icons.Default.Person)
+    object Discover : Screen("discover", "发现", Icons.Default.Home)
+    object Matches : Screen("matches", "心动", Icons.Default.Favorite)
+    object Messages : Screen("messages", "私信", Icons.Default.Email)
+    object Events : Screen("events", "沙龙", Icons.Default.Person)
+    object Profile : Screen("profile", "我的", Icons.Default.Person)
 }
 
 val items = listOf(
@@ -48,7 +45,6 @@ fun AurelianApp() {
             val currentDestination = navBackStackEntry?.destination
             val currentRoute = currentDestination?.route
 
-            // Only show bottom bar on root screens
             if (currentRoute in items.map { it.route }) {
                 NavigationBar(
                     containerColor = DeepBlack,
@@ -83,22 +79,36 @@ fun AurelianApp() {
     ) { innerPadding ->
         NavHost(
             navController,
-            startDestination = Screen.Discover.route,
+            startDestination = "login",
             Modifier.padding(innerPadding)
         ) {
+            composable("login") {
+                LoginScreen(onLoginSuccess = {
+                    navController.navigate(Screen.Discover.route) {
+                        popUpTo("login") { inclusive = true }
+                    }
+                })
+            }
+
             composable(Screen.Discover.route) { MainFeedScreen() }
             composable(Screen.Matches.route) { MatchesScreen() }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
-                    navController.navigate("chat/$userName")
+                    navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
                 })
             }
             composable(Screen.Events.route) {
                 EventsScreen(onNavigateToEventDetails = { eventName ->
-                    navController.navigate("eventDetails/$eventName")
+                    navController.navigate("eventDetails/${java.net.URLEncoder.encode(eventName, "UTF-8")}")
                 })
             }
-            composable(Screen.Profile.route) { ProfileScreen() }
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onNavigateToSettings = { navController.navigate("settings") },
+                    onNavigateToReferral = { navController.navigate("referral") },
+                    onNavigateToSubscription = { navController.navigate("subscription") }
+                )
+            }
 
             composable("chat/{userName}") { backStackEntry ->
                 val userName = backStackEntry.arguments?.getString("userName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "礼宾部"
@@ -107,6 +117,15 @@ fun AurelianApp() {
             composable("eventDetails/{eventName}") { backStackEntry ->
                 val eventName = backStackEntry.arguments?.getString("eventName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
                 EventDetailsScreen(eventName = eventName, onBack = { navController.popBackStack() })
+            }
+            composable("settings") {
+                SettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("referral") {
+                ReferralScreen(onBack = { navController.popBackStack() })
+            }
+            composable("subscription") {
+                SubscriptionScreen(onBack = { navController.popBackStack() })
             }
         }
     }
