@@ -1,11 +1,10 @@
 package com.aurelian.app
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.sp
-
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MailOutline
@@ -16,19 +15,46 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainFeedScreen() {
-    Box(modifier = Modifier.fillMaxSize().background(DeepBlack)) {
+    val users = listOf(
+        User(1, "苏婉, 26", "独立艺术策展人，游历全球的旅者。", "上海, 中国", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80"),
+        User(2, "林静恩, 27", "古典乐与现代主义建筑的鉴赏者。", "北京, 中国", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80"),
+        User(3, "Sofia, 29", "品酒师，私人酒庄主理人。", "巴黎, 法国", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80")
+    )
+
+    val pagerState = rememberPagerState(pageCount = { users.size })
+
+    VerticalPager(
+        state = pagerState,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepBlack)
+    ) { page ->
+        FeedItem(user = users[page])
+    }
+}
+
+
+
+@Composable
+fun FeedItem(user: User) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // Simulated Full Screen Video/Image
         AsyncImage(
-            model = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+            model = user.imageUrl,
             contentDescription = "Feed Background",
             modifier = Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            contentScale = ContentScale.Crop
         )
 
         // Gradient overlay for bottom text
@@ -36,7 +62,7 @@ fun MainFeedScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                    Brush.verticalGradient(
                         colors = listOf(Color.Transparent, Color(0xAA000000)),
                         startY = 500f
                     )
@@ -50,10 +76,10 @@ fun MainFeedScreen() {
                 .padding(16.dp)
                 .padding(bottom = 80.dp) // Leave space for BottomNav
         ) {
-            Text("苏婉, 26", color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("上海, 中国", color = Gold, fontSize = 14.sp)
+            Text(user.name, color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(user.location, color = Gold, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("独立艺术策展人，游历全球的旅者。", color = Silver, fontSize = 16.sp)
+            Text(user.bio, color = Silver, fontSize = 16.sp)
         }
 
         // Actions Overlay (Right Side)

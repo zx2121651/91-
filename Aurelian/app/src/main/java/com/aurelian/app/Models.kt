@@ -1,14 +1,11 @@
 package com.aurelian.app
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.sp
-
 data class User(
     val id: Int,
     val name: String,
     val bio: String,
-    val location: String
+    val location: String,
+    val imageUrl: String = ""
 )
 
 data class Message(
