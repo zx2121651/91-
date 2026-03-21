@@ -99,6 +99,9 @@ fun AurelianApp() {
             }
             composable(Screen.Events.route) {
                 EventsScreen(onNavigateToEventDetails = { eventName ->
+                    if (eventName.contains("东方雅集")) {
+                        navController.navigate("tea_ceremony")
+                    } else
                     navController.navigate("eventDetails/${java.net.URLEncoder.encode(eventName, "UTF-8")}")
                 })
             }
@@ -123,6 +126,9 @@ fun AurelianApp() {
             }
             composable("masquerade") {
                 MasqueradeScreen(onBack = { navController.popBackStack() })
+            }
+            composable("tea_ceremony") {
+                TeaCeremonyScreen(onBack = { navController.popBackStack() })
             }
             composable("referral") {
                 ReferralScreen(onBack = { navController.popBackStack() })

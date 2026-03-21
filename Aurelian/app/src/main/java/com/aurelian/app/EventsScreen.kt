@@ -24,6 +24,7 @@ import coil.compose.AsyncImage
 fun EventsScreen(onNavigateToEventDetails: (String) -> Unit) {
     val events = listOf(
         EventItemData("云端流金·鸡尾酒会", "11月5日", "晚上 7:00", "碎片大厦 (The Shard)", "https://images.unsplash.com/photo-1574096079513-d8259312b785?auto=format&fit=crop&w=800&q=80"),
+        EventItemData("东方雅集 · 宋代点茶", "周六", "14:00", "上海外滩私人茶室", "https://images.unsplash.com/photo-1544256718-3b623862210c?auto=format&fit=crop&w=800&q=80"),
         EventItemData("当代艺术鉴赏夜", "11月12日", "晚上 6:00", "新邦德街私立画廊", "https://images.unsplash.com/photo-1544158498-8422fb813db1?auto=format&fit=crop&w=800&q=80")
     )
 
