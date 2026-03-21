@@ -28,8 +28,8 @@ fun MatchesScreen() {
     var searchQuery by remember { mutableStateOf("") }
 
     val matches = listOf(
-        MatchItemData("Eleanor, 27", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80", true),
-        MatchItemData("Julian, 32", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80", false),
+        MatchItemData("林静恩, 27", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80", true),
+        MatchItemData("沈修明, 32", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80", false),
         MatchItemData("Sofia, 29", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80", true),
         MatchItemData("Marcus, 35", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80", false)
     )
@@ -44,8 +44,8 @@ fun MatchesScreen() {
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search matches", color = Color.Gray) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Gold) },
+            placeholder = { Text("搜索", color = Color.Gray) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "搜索", tint = Gold) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp, bottom = 16.dp),
@@ -59,7 +59,7 @@ fun MatchesScreen() {
         )
 
         Text(
-            text = "YOUR MATCHES",
+            text = "私密推荐",
             color = Silver,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
@@ -94,7 +94,7 @@ fun MatchCard(match: MatchItemData) {
     ) {
         AsyncImage(
             model = match.imageUrl,
-            contentDescription = "Match Photo",
+            contentDescription = "匹配照片",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
@@ -127,7 +127,7 @@ fun MatchCard(match: MatchItemData) {
                     .background(Gold, RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
-                Text("NEW", color = Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("新晋", color = Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

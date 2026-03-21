@@ -40,7 +40,7 @@ fun MessagesScreen(onNavigateToChat: (String) -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "MESSAGES",
+                text = "私信",
                 color = Silver,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -55,7 +55,7 @@ fun MessagesScreen(onNavigateToChat: (String) -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .background(Color(0xFF1B1B1B))
                 .padding(16.dp)
-                .clickable { onNavigateToChat("Concierge Julian") },
+                .clickable { onNavigateToChat("礼宾管家 朱利安") },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -65,13 +65,13 @@ fun MessagesScreen(onNavigateToChat: (String) -> Unit) {
                     .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = "Concierge", tint = Gold)
+                Icon(Icons.Default.Person, contentDescription = "礼宾部", tint = Gold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text("Concierge Julian", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("礼宾管家 朱利安", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Member Identity Verified", color = Silver, fontSize = 12.sp)
+                Text("Aurelian 官方认证", color = Silver, fontSize = 12.sp)
             }
         }
 
@@ -79,9 +79,9 @@ fun MessagesScreen(onNavigateToChat: (String) -> Unit) {
 
         // Message List
         val messages = listOf(
-            MessageItemData("Isabella, 28", "I'm looking forward to the gallery...", "14:22", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80", true),
-            MessageItemData("Sebastian, 34", "Shall we reserve a table at...", "Yesterday", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80", false),
-            MessageItemData("Eleanor, 27", "The masquerade was absolutely...", "Oct 12", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80", false)
+            MessageItemData("伊莎贝拉, 28", "我很期待明天的画廊预览...", "14:22", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80", true),
+            MessageItemData("顾子明, 34", "我们要不要在半岛酒店订个...", "昨天", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80", false),
+            MessageItemData("林静恩, 27", "那场化装舞会简直太...", "10月12日", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80", false)
         )
 
         LazyColumn(
@@ -108,7 +108,7 @@ fun MessageListItem(msg: MessageItemData, onClick: () -> Unit) {
     ) {
         AsyncImage(
             model = msg.avatarUrl,
-            contentDescription = "Avatar",
+            contentDescription = "头像",
             modifier = Modifier
                 .size(56.dp)
                 .clip(CircleShape),

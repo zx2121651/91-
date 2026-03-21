@@ -33,7 +33,7 @@ fun EventDetailsScreen(eventName: String, onBack: () -> Unit) {
         Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
             AsyncImage(
                 model = "https://images.unsplash.com/photo-1519671482749-fd09871171dd?auto=format&fit=crop&w=1200&q=80",
-                contentDescription = "Event Hero",
+                contentDescription = "活动头图",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -54,7 +54,7 @@ fun EventDetailsScreen(eventName: String, onBack: () -> Unit) {
                     .align(Alignment.TopStart)
                     .padding(16.dp)
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Gold)
+                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Gold)
             }
         }
 
@@ -69,15 +69,15 @@ fun EventDetailsScreen(eventName: String, onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = "Date", tint = Gold, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.DateRange, contentDescription = "日期", tint = Gold, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Nov 15, 9:00 PM", color = Silver, fontSize = 16.sp)
+                Text("11月15日, 晚上 9:00", color = Silver, fontSize = 16.sp)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.LocationOn, contentDescription = "Location", tint = Gold, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.LocationOn, contentDescription = "地点", tint = Gold, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("The Mayfair Penthouse, London", color = Silver, fontSize = 16.sp)
+                Text("梅费尔顶层公寓, 伦敦", color = Silver, fontSize = 16.sp)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -85,16 +85,16 @@ fun EventDetailsScreen(eventName: String, onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "An evening of mystery and opulence. Join us for a curated experience designed to spark meaningful connections amidst a backdrop of live orchestral performances and curated gastronomy.",
+                text = "一个充满神秘与奢华的夜晚。加入我们精心策划的体验，在现场管弦乐演奏与定制美食的背景下，擦出意义非凡的火花。",
                 color = Silver,
                 fontSize = 16.sp,
                 lineHeight = 24.sp
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text("ATTIRE PROTOCOL", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text("着装礼仪", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Black Tie & Masquerade. Adherence to the dress code is strictly enforced.", color = Silver, fontSize = 14.sp)
+            Text("Black Tie 与假面。敬请各位贵宾严格遵守着装规范。", color = Silver, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(48.dp))
             Button(
@@ -105,7 +105,7 @@ fun EventDetailsScreen(eventName: String, onBack: () -> Unit) {
                     .height(56.dp),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
             ) {
-                Text("REQUEST INVITATION", fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("请求获取请柬", fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }

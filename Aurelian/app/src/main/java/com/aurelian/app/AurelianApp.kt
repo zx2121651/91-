@@ -101,11 +101,11 @@ fun AurelianApp() {
             composable(Screen.Profile.route) { ProfileScreen() }
 
             composable("chat/{userName}") { backStackEntry ->
-                val userName = backStackEntry.arguments?.getString("userName") ?: "Concierge"
+                val userName = backStackEntry.arguments?.getString("userName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "礼宾部"
                 ChatScreen(userName = userName, onBack = { navController.popBackStack() })
             }
             composable("eventDetails/{eventName}") { backStackEntry ->
-                val eventName = backStackEntry.arguments?.getString("eventName") ?: "Event"
+                val eventName = backStackEntry.arguments?.getString("eventName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
                 EventDetailsScreen(eventName = eventName, onBack = { navController.popBackStack() })
             }
         }

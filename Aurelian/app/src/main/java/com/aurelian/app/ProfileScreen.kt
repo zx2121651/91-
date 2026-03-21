@@ -30,7 +30,7 @@ fun ProfileScreen() {
         Box(modifier = Modifier.fillMaxWidth().height(500.dp)) {
             AsyncImage(
                 model = "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
-                contentDescription = "Profile Image",
+                contentDescription = "个人主页头像",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -50,14 +50,14 @@ fun ProfileScreen() {
                     .align(androidx.compose.ui.Alignment.BottomStart)
                     .padding(24.dp)
             ) {
-                Text("Eleanor, 27", color = Silver, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                Text("林静恩, 27", color = Silver, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Mayfair, London", color = Gold, fontSize = 16.sp)
+                Text("中国, 北京 (静安区)", color = Gold, fontSize = 16.sp)
             }
         }
 
         Text(
-            text = "A connoisseur of classical music and modernist architecture, seeking a partner for shared global adventures and intellectual discourse.",
+            text = "古典乐与现代主义建筑的鉴赏者。寻找一位能共同探索世界、在智识上产生共鸣的伴侣。",
             color = Silver,
             fontSize = 18.sp,
             lineHeight = 28.sp,
@@ -76,7 +76,7 @@ fun ProfileScreen() {
                 border = androidx.compose.foundation.BorderStroke(1.dp, Gold),
                 modifier = Modifier.weight(1f).height(56.dp)
             ) {
-                Text("PASS", letterSpacing = 1.5.sp)
+                Text("无感", letterSpacing = 1.5.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(
@@ -84,7 +84,7 @@ fun ProfileScreen() {
                 colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
                 modifier = Modifier.weight(1f).height(56.dp)
             ) {
-                Text("MATCH", letterSpacing = 1.5.sp)
+                Text("心动", letterSpacing = 1.5.sp)
             }
         }
         Spacer(modifier = Modifier.height(80.dp))

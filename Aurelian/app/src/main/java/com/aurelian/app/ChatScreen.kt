@@ -25,8 +25,8 @@ fun ChatScreen(userName: String, onBack: () -> Unit) {
     var messageText by remember { mutableStateOf("") }
     val messages = remember {
         mutableStateListOf(
-            ChatMessage("I'm looking forward to the gallery opening tomorrow.", false, "21:14"),
-            ChatMessage("Me too. The new exhibition looks promising.", true, "21:16")
+            ChatMessage("非常期待明天的画廊私人预览。", false, "21:14"),
+            ChatMessage("我也是。听说这次展出的几幅后现代作品很值得期待。", true, "21:16")
         )
     }
 
@@ -40,7 +40,7 @@ fun ChatScreen(userName: String, onBack: () -> Unit) {
             title = { Text(userName, color = Gold, style = Typography.titleLarge) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Gold)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Gold)
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -75,7 +75,7 @@ fun ChatScreen(userName: String, onBack: () -> Unit) {
             OutlinedTextField(
                 value = messageText,
                 onValueChange = { messageText = it },
-                placeholder = { Text("Write a message...", color = Color.Gray) },
+                placeholder = { Text("发送消息...", color = Color.Gray) },
                 modifier = Modifier.weight(1f),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Gold,
@@ -90,7 +90,7 @@ fun ChatScreen(userName: String, onBack: () -> Unit) {
             IconButton(
                 onClick = {
                     if (messageText.isNotBlank()) {
-                        messages.add(ChatMessage(messageText, true, "Now"))
+                        messages.add(ChatMessage(messageText, true, "刚刚"))
                         messageText = ""
                     }
                 },
@@ -99,7 +99,7 @@ fun ChatScreen(userName: String, onBack: () -> Unit) {
                     .clip(RoundedCornerShape(24.dp))
                     .background(Gold)
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Send", tint = Black)
+                Icon(Icons.Default.Send, contentDescription = "发送", tint = Black)
             }
         }
     }

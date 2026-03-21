@@ -23,8 +23,8 @@ import coil.compose.AsyncImage
 @Composable
 fun EventsScreen(onNavigateToEventDetails: (String) -> Unit) {
     val events = listOf(
-        EventItemData("Gilded Rooftop Cocktails", "Nov 5", "7:00 PM", "The Shard", "https://images.unsplash.com/photo-1574096079513-d8259312b785?auto=format&fit=crop&w=800&q=80"),
-        EventItemData("Private Gallery Preview", "Nov 12", "6:00 PM", "New Bond Street", "https://images.unsplash.com/photo-1544158498-8422fb813db1?auto=format&fit=crop&w=800&q=80")
+        EventItemData("云端流金·鸡尾酒会", "11月5日", "晚上 7:00", "碎片大厦 (The Shard)", "https://images.unsplash.com/photo-1574096079513-d8259312b785?auto=format&fit=crop&w=800&q=80"),
+        EventItemData("当代艺术鉴赏夜", "11月12日", "晚上 6:00", "新邦德街私立画廊", "https://images.unsplash.com/photo-1544158498-8422fb813db1?auto=format&fit=crop&w=800&q=80")
     )
 
     Column(
@@ -40,7 +40,7 @@ fun EventsScreen(onNavigateToEventDetails: (String) -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "THE SOIRÉES",
+                text = "私密沙龙",
                 color = Silver,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -58,11 +58,11 @@ fun EventsScreen(onNavigateToEventDetails: (String) -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp)
-                        .clickable { onNavigateToEventDetails("The Autumnal Masquerade") }
+                        .clickable { onNavigateToEventDetails("金秋假面舞会") }
                 ) {
                     AsyncImage(
                         model = "https://images.unsplash.com/photo-1519671482749-fd09871171dd?auto=format&fit=crop&w=1200&q=80",
-                        contentDescription = "Hero Event",
+                        contentDescription = "主打活动",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -81,18 +81,18 @@ fun EventsScreen(onNavigateToEventDetails: (String) -> Unit) {
                             .align(Alignment.BottomStart)
                             .padding(24.dp)
                     ) {
-                        Text("FEATURED", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                        Text("本周倾呈", color = Gold, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("The Autumnal Masquerade", color = Silver, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("金秋假面舞会", color = Silver, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Oct 31 • The Belgravia Manor", color = Silver, fontSize = 14.sp)
+                        Text("10月31日 • 贝尔格莱维亚庄园", color = Silver, fontSize = 14.sp)
                     }
                 }
             }
 
             item {
                 Text(
-                    text = "UPCOMING",
+                    text = "即将举行",
                     color = Silver,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -121,7 +121,7 @@ fun EventListItem(event: EventItemData, onClick: () -> Unit) {
     ) {
         AsyncImage(
             model = event.imageUrl,
-            contentDescription = "Event Image",
+            contentDescription = "活动图片",
             modifier = Modifier
                 .size(80.dp)
                 .clip(RoundedCornerShape(8.dp)),
@@ -140,7 +140,7 @@ fun EventListItem(event: EventItemData, onClick: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B1B1B), contentColor = Gold),
             shape = RoundedCornerShape(4.dp)
         ) {
-            Text("RSVP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("敬请赐复", fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

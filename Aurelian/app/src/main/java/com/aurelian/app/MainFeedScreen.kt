@@ -50,10 +50,10 @@ fun MainFeedScreen() {
                 .padding(16.dp)
                 .padding(bottom = 80.dp) // Leave space for BottomNav
         ) {
-            Text("Sienna, 26", color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("London, UK", color = Gold, fontSize = 14.sp)
+            Text("苏婉, 26", color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text("上海, 中国", color = Gold, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Art curator and global traveler.", color = Silver, fontSize = 16.sp)
+            Text("独立艺术策展人，游历全球的旅者。", color = Silver, fontSize = 16.sp)
         }
 
         // Actions Overlay (Right Side)
@@ -66,13 +66,13 @@ fun MainFeedScreen() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.FavoriteBorder, contentDescription = "Like", tint = Gold, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
             }
             IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.MailOutline, contentDescription = "Comment", tint = Gold, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.MailOutline, contentDescription = "评论", tint = Gold, modifier = Modifier.size(32.dp))
             }
             IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.Share, contentDescription = "Share", tint = Gold, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.Share, contentDescription = "分享", tint = Gold, modifier = Modifier.size(32.dp))
             }
         }
     }
