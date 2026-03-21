@@ -5,7 +5,8 @@ data class User(
     val name: String,
     val bio: String,
     val location: String,
-    val imageUrl: String = ""
+    val imageUrl: String = "",
+    val videoUrl: String = ""
 )
 
 data class Message(
