@@ -90,7 +90,7 @@ fun AurelianApp() {
                 })
             }
 
-            composable(Screen.Discover.route) { MainFeedScreen() }
+            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }) }
             composable(Screen.Matches.route) { MatchesScreen() }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
@@ -120,6 +120,9 @@ fun AurelianApp() {
             }
             composable("settings") {
                 SettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable("masquerade") {
+                MasqueradeScreen(onBack = { navController.popBackStack() })
             }
             composable("referral") {
                 ReferralScreen(onBack = { navController.popBackStack() })

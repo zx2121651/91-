@@ -1,5 +1,7 @@
 package com.aurelian.app
 
+import androidx.compose.material.icons.filled.Star
+
 import android.net.Uri
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -38,7 +40,7 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainFeedScreen() {
+fun MainFeedScreen(onNavigateToMasquerade: () -> Unit = {}) {
     val users = listOf(
         User(1, "苏婉, 26", "独立艺术策展人，游历全球的旅者。", "上海, 中国", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"),
         User(2, "林静恩, 27", "古典乐与现代主义建筑的鉴赏者。", "北京, 中国", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"),
@@ -53,12 +55,12 @@ fun MainFeedScreen() {
             .fillMaxSize()
             .background(DeepBlack)
     ) { page ->
-        FeedItem(user = users[page], isSelected = page == pagerState.currentPage)
+        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade)
     }
 }
 
 @Composable
-fun FeedItem(user: User, isSelected: Boolean) {
+fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit) {
     val context = LocalContext.current
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -132,6 +134,9 @@ fun FeedItem(user: User, isSelected: Boolean) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             IconButton(onClick = { /* TODO */ }) {
+            IconButton(onClick = onNavigateToMasquerade) {
+                Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = Gold, modifier = Modifier.size(32.dp))
+            }
                 Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
             }
             IconButton(onClick = { /* TODO */ }) {
