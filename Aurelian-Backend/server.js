@@ -9,6 +9,11 @@ const feedRoutes = require('./src/routes/feed');
 const profileRoutes = require('./src/routes/profile');
 const matchesRoutes = require('./src/routes/matches');
 const eventsRoutes = require('./src/routes/events');
+const interactionsRoutes = require('./src/routes/interactions');
+const messagesRoutes = require('./src/routes/messages');
+const masqueradeRoutes = require('./src/routes/masquerade');
+const referralsRoutes = require('./src/routes/referrals');
+const mediaRoutes = require('./src/routes/media');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +30,12 @@ app.use('/api/v1/feed', feedRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/matches', matchesRoutes);
 app.use('/api/v1/events', eventsRoutes);
+app.use('/api/v1/interactions', interactionsRoutes);
+app.use('/api/v1/messages', messagesRoutes);
+app.use('/api/v1/invitations', messagesRoutes); // Routing invitations via messages controller
+app.use('/api/v1/masquerade', masqueradeRoutes);
+app.use('/api/v1/referrals', referralsRoutes);
+app.use('/api/v1/media', mediaRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
