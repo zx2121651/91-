@@ -21,6 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -40,22 +46,50 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainFeedScreen(onNavigateToMasquerade: () -> Unit = {}) {
-    val users = listOf(
-        User(1, "苏婉, 26", "独立艺术策展人，游历全球的旅者。", "上海, 中国", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"),
-        User(2, "林静恩, 27", "古典乐与现代主义建筑的鉴赏者。", "北京, 中国", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"),
-        User(3, "Sofia, 29", "品酒师，私人酒庄主理人。", "巴黎, 法国", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80", "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4")
-    )
+fun MainFeedScreen(
+    onNavigateToMasquerade: () -> Unit = {},
+    viewModel: MainFeedViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    val pagerState = rememberPagerState(pageCount = { users.size })
+    when (val state = uiState) {
+        is FeedUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Gold)
+            }
+        }
+        is FeedUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "加载失败", color = Color.Red)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = state.message, color = Silver)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.fetchVideos() }) {
+                        Text("重试")
+                    }
+                }
+            }
+        }
+        is FeedUiState.Success -> {
+            val users = state.users
+            if (users.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                    Text("暂无视频", color = Silver)
+                }
+            } else {
+                val pagerState = rememberPagerState(pageCount = { users.size })
 
-    VerticalPager(
-        state = pagerState,
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepBlack)
-    ) { page ->
-        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade)
+                VerticalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(DeepBlack)
+                ) { page ->
+                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade)
+                }
+            }
+        }
     }
 }
 
@@ -133,10 +167,10 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            IconButton(onClick = { /* TODO */ }) {
             IconButton(onClick = onNavigateToMasquerade) {
                 Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = Gold, modifier = Modifier.size(32.dp))
             }
+            IconButton(onClick = { /* TODO */ }) {
                 Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
             }
             IconButton(onClick = { /* TODO */ }) {

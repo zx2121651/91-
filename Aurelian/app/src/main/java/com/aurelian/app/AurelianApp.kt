@@ -115,6 +115,7 @@ fun AurelianApp() {
 
             composable("chat/{userName}") { backStackEntry ->
                 val userName = backStackEntry.arguments?.getString("userName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "礼宾部"
+
                 ChatScreen(userName = userName, onBack = { navController.popBackStack() }, onNavigateToInvite = { navController.navigate("sendInvite/$userName") })
             }
             composable("eventDetails/{eventName}") { backStackEntry ->
@@ -134,7 +135,7 @@ fun AurelianApp() {
                 ReferralScreen(onBack = { navController.popBackStack() })
             }
             composable("sendInvite/{userName}") { backStackEntry ->
-                val userName = backStackEntry.arguments?.getString("userName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "礼宾部"
+
                 SendInvitationScreen(onBack = { navController.popBackStack() }, onSend = { navController.popBackStack() })
             }
             composable("subscription") {
