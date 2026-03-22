@@ -3,26 +3,118 @@ package com.aurelian.app
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Body
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 // Response wrappers based on our API_DOCUMENTATION.md
 data class FeedResponse(
     val data: List<User>,
     val nextCursor: String?
 )
-
+// Response wrappers based on our API_DOCUMENTATION.md
+data class LoginRequest(val email: String, val code: String)
+data class LoginResponse(val token: String, val isNewUser: Boolean)
+data class VerifyInviteRequest(val inviteCode: String)
+data class VerifyInviteResponse(val valid: Boolean, val referrerId: String)
+data class BiometricRequest(val deviceId: String, val signature: String)
+data class BaseResponse(val success: Boolean)
+data class ProfileData(val id: String, val name: String, val membership: String, val isVerified: Boolean)
+data class ProfileResponse(val data: ProfileData)
+data class UpdateProfileRequest(val bio: String)
+data class PreferencesRequest(val stealthMode: Boolean, val minAge: Int)
+data class SubmitAssetsRequest(val documentUrls: List<String>)
+data class SubmitAssetsResponse(val status: String)
+data class LikeRequest(val targetUserId: String)
+data class LikeResponse(val matched: Boolean, val matchId: String?)
+data class PassRequest(val targetUserId: String)
+data class Match(val matchId: String, val user: User)
+data class Admirer(val userId: String, val isBlurred: Boolean)
+data class Conversation(val convId: String, val lastMessage: String, val unreadCount: Int)
+data class SendMessageRequest(val convId: String, val content: String)
+data class SendMessageResponse(val msgId: String, val timestamp: Long)
+data class SendInviteRequest(val targetUserId: String, val type: String, val location: String, val time: String, val message: String)
+data class SendInviteResponse(val inviteId: String, val status: String)
+data class RespondInviteRequest(val action: String)
+data class RespondInviteResponse(val status: String)
+data class EventResponse(val eventId: String, val title: String, val date: String)
+data class EventDetailsResponse(val title: String, val attireProtocol: String)
+data class RsvpRequest(val partySize: Int)
+data class RsvpResponse(val status: String)
+data class MasqueradeStatusResponse(val isOpen: Boolean, val endTime: Long, val question: String)
+data class SubmitAnswerRequest(val answer: String)
+data class SubmitAnswerResponse(val status: String)
+data class ReferralsStatusResponse(val inviteCode: String, val remaining: Int)
+data class UploadUrlRequest(val contentType: String, val fileSize: Long)
+data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
+data class ConfirmMediaRequest(val mediaId: String)
+data class ConfirmMediaResponse(val success: Boolean, val processing: Boolean)
 interface AurelianApiService {
-    // 10.0.2.2 is the special alias to the host loopback interface in Android Emulator
+    // 1. Auth & Gatekeeping
+    @POST("api/v1/auth/login")
+    suspend fun login(@Body request: LoginRequest): LoginResponse
+    @POST("api/v1/auth/verify-invite")
+    suspend fun verifyInvite(@Body request: VerifyInviteRequest): VerifyInviteResponse
+    @POST("api/v1/auth/biometric")
+    suspend fun biometricAuth(@Body request: BiometricRequest): BaseResponse
+    // 2. Profile & Vetting
+    @GET("api/v1/profile/me")
+    suspend fun getProfile(): ProfileResponse
+    @POST("api/v1/profile/update")
+    suspend fun updateProfile(@Body request: UpdateProfileRequest): BaseResponse
+    @POST("api/v1/profile/preferences")
+    suspend fun updatePreferences(@Body request: PreferencesRequest): BaseResponse
+    @POST("api/v1/vetting/submit-assets")
+    suspend fun submitAssets(@Body request: SubmitAssetsRequest): SubmitAssetsResponse
+    // 3. Feed & Matchmaking
     @GET("api/v1/feed/videos")
     suspend fun getFeedVideos(): FeedResponse
+    @POST("api/v1/interactions/like")
+    suspend fun likeUser(@Body request: LikeRequest): LikeResponse
+    @POST("api/v1/interactions/pass")
+    suspend fun passUser(@Body request: PassRequest): BaseResponse
+    @GET("api/v1/matches")
+    suspend fun getMatches(@Query("page") page: Int): List<Match>
+    @GET("api/v1/interactions/admirers")
+    suspend fun getAdmirers(): List<Admirer>
+    // 4. Messaging & Invitations
+    @GET("api/v1/messages/conversations")
+    suspend fun getConversations(): List<Conversation>
+    @GET("api/v1/messages/conversations/{id}/messages")
+    suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): List<Message>
+    @POST("api/v1/messages/send")
+    suspend fun sendMessage(@Body request: SendMessageRequest): SendMessageResponse
+    @POST("api/v1/invitations/send")
+    suspend fun sendInvitation(@Body request: SendInviteRequest): SendInviteResponse
+    @POST("api/v1/invitations/{id}/respond")
+    suspend fun respondToInvitation(@Path("id") id: String, @Body request: RespondInviteRequest): RespondInviteResponse
+    // 5. Events
+    @GET("api/v1/events")
+    suspend fun getEvents(@Query("type") type: String): List<EventResponse>
+    @GET("api/v1/events/{id}")
+    suspend fun getEventDetails(@Path("id") id: String): EventDetailsResponse
+    @POST("api/v1/events/{id}/rsvp")
+    suspend fun rsvpEvent(@Path("id") id: String, @Body request: RsvpRequest): RsvpResponse
+    // 6. Masquerade
+    @GET("api/v1/masquerade/status")
+    suspend fun getMasqueradeStatus(): MasqueradeStatusResponse
+    @POST("api/v1/masquerade/submit")
+    suspend fun submitMasqueradeAnswer(@Body request: SubmitAnswerRequest): SubmitAnswerResponse
+    // 7. Referrals
+    @GET("api/v1/referrals/status")
+    suspend fun getReferralsStatus(): ReferralsStatusResponse
+    // 8. Media
+    @POST("api/v1/media/upload-url")
+    suspend fun getUploadUrl(@Body request: UploadUrlRequest): UploadUrlResponse
+    @POST("api/v1/media/confirm")
+    suspend fun confirmMedia(@Body request: ConfirmMediaRequest): ConfirmMediaResponse
 }
-
 object NetworkClient {
     private const val BASE_URL = "http://10.0.2.2:3000/"
-
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-
     val apiService: AurelianApiService = retrofit.create(AurelianApiService::class.java)
 }

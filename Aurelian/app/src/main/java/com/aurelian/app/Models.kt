@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class User(
     @SerializedName("userId", alternate = ["id"])
-    val id: Int,
+    val id: String,
     val name: String,
     val bio: String,
     val location: String,
@@ -14,14 +14,14 @@ data class User(
 )
 
 data class Message(
-    val id: Int,
+    val id: String,
     val sender: User,
     val content: String,
     val timestamp: String
 )
 
 data class Event(
-    val id: Int,
+    val id: String,
     val title: String,
     val date: String,
     val time: String,

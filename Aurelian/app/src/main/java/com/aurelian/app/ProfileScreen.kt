@@ -18,14 +18,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+
+
 @Composable
-fun ProfileScreen(onNavigateToSettings: () -> Unit, onNavigateToReferral: () -> Unit, onNavigateToSubscription: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepBlack)
-            .verticalScroll(rememberScrollState())
-    ) {
+fun ProfileScreen(
+    onNavigateToSettings: () -> Unit,
+    onNavigateToReferral: () -> Unit,
+    onNavigateToSubscription: () -> Unit,
+    viewModel: ProfileViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    when (val state = uiState) {
+        is ProfileUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Gold)
+            }
+        }
+        is ProfileUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "加载失败", color = Color.Red)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = state.message, color = Silver)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.fetchProfile() }) {
+                        Text("重试")
+                    }
+                }
+            }
+        }
+        is ProfileUiState.Success -> {
+            val profile = state.profile
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DeepBlack)
+                    .verticalScroll(rememberScrollState())
+            ) {
         Box(modifier = Modifier.fillMaxWidth().height(500.dp)) {
             AsyncImage(
                 model = "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
@@ -49,14 +84,14 @@ fun ProfileScreen(onNavigateToSettings: () -> Unit, onNavigateToReferral: () -> 
                     .align(androidx.compose.ui.Alignment.BottomStart)
                     .padding(24.dp)
             ) {
-                Text("林静恩, 27", color = Silver, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                Text(profile.name, color = Silver, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("中国, 北京 (静安区)", color = Gold, fontSize = 16.sp)
             }
         }
 
         Text(
-            text = "古典乐与现代主义建筑的鉴赏者。寻找一位能共同探索世界、在智识上产生共鸣的伴侣。",
+            text = "身份验证状态: " + (if (profile.isVerified) "已认证" else "未认证") + "\n会员等级: " + profile.membership,
             color = Silver,
             fontSize = 18.sp,
             lineHeight = 28.sp,
@@ -116,5 +151,7 @@ fun ProfileScreen(onNavigateToSettings: () -> Unit, onNavigateToReferral: () -> 
         }
 
         Spacer(modifier = Modifier.height(80.dp))
+    }
+}
     }
 }
