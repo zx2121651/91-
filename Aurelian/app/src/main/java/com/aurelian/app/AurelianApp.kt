@@ -91,7 +91,7 @@ fun AurelianApp() {
             }
 
             composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }) }
-            composable(Screen.Matches.route) { MatchesScreen() }
+            composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { navController.navigate("profile") }) }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
                     navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")

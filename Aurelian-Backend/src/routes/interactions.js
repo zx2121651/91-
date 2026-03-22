@@ -34,4 +34,15 @@ router.post('/pass', (req, res) => {
     });
 });
 
+
+// Get admirers (mock)
+router.get('/admirers', (req, res) => {
+    res.json({
+        data: [
+            { userId: "usr_3", isBlurred: true },
+            { userId: "usr_4", isBlurred: true }
+        ]
+    });
+});
+
 module.exports = router;

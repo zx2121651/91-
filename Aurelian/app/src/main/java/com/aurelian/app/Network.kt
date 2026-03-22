@@ -30,6 +30,13 @@ data class LikeRequest(val targetUserId: String)
 data class LikeResponse(val matched: Boolean, val matchId: String?)
 data class PassRequest(val targetUserId: String)
 data class Match(val matchId: String, val user: User)
+data class MatchesResponse(val data: List<Match>)
+data class AdmirersResponse(val data: List<Admirer>)
+data class EventsListResponse(val data: List<EventResponse>)
+data class ConversationsListResponse(val data: List<Conversation>)
+
+
+
 data class Admirer(val userId: String, val isBlurred: Boolean)
 data class Conversation(val convId: String, val lastMessage: String, val unreadCount: Int)
 data class SendMessageRequest(val convId: String, val content: String)
@@ -45,6 +52,8 @@ data class RsvpResponse(val status: String)
 data class MasqueradeStatusResponse(val isOpen: Boolean, val endTime: Long, val question: String)
 data class SubmitAnswerRequest(val answer: String)
 data class SubmitAnswerResponse(val status: String)
+data class MasqueradeResponseWrapper(val data: MasqueradeStatusResponse)
+
 data class ReferralsStatusResponse(val inviteCode: String, val remaining: Int)
 data class UploadUrlRequest(val contentType: String, val fileSize: Long)
 data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
@@ -75,12 +84,12 @@ interface AurelianApiService {
     @POST("api/v1/interactions/pass")
     suspend fun passUser(@Body request: PassRequest): BaseResponse
     @GET("api/v1/matches")
-    suspend fun getMatches(@Query("page") page: Int): List<Match>
+    suspend fun getMatches(@Query("page") page: Int): MatchesResponse
     @GET("api/v1/interactions/admirers")
-    suspend fun getAdmirers(): List<Admirer>
+    suspend fun getAdmirers(): AdmirersResponse
     // 4. Messaging & Invitations
     @GET("api/v1/messages/conversations")
-    suspend fun getConversations(): List<Conversation>
+    suspend fun getConversations(): ConversationsListResponse
     @GET("api/v1/messages/conversations/{id}/messages")
     suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): List<Message>
     @POST("api/v1/messages/send")
@@ -91,14 +100,14 @@ interface AurelianApiService {
     suspend fun respondToInvitation(@Path("id") id: String, @Body request: RespondInviteRequest): RespondInviteResponse
     // 5. Events
     @GET("api/v1/events")
-    suspend fun getEvents(@Query("type") type: String): List<EventResponse>
+    suspend fun getEvents(@Query("type") type: String): EventsListResponse
     @GET("api/v1/events/{id}")
     suspend fun getEventDetails(@Path("id") id: String): EventDetailsResponse
     @POST("api/v1/events/{id}/rsvp")
     suspend fun rsvpEvent(@Path("id") id: String, @Body request: RsvpRequest): RsvpResponse
     // 6. Masquerade
     @GET("api/v1/masquerade/status")
-    suspend fun getMasqueradeStatus(): MasqueradeStatusResponse
+    suspend fun getMasqueradeStatus(): MasqueradeResponseWrapper
     @POST("api/v1/masquerade/submit")
     suspend fun submitMasqueradeAnswer(@Body request: SubmitAnswerRequest): SubmitAnswerResponse
     // 7. Referrals

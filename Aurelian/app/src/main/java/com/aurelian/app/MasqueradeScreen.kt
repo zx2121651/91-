@@ -18,11 +18,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MasqueradeScreen(onBack: () -> Unit) {
+fun MasqueradeScreen(
+    onBack: () -> Unit,
+    viewModel: MasqueradeViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var answerText by remember { mutableStateOf("") }
 
     Box(
@@ -30,144 +35,146 @@ fun MasqueradeScreen(onBack: () -> Unit) {
             .fillMaxSize()
             .background(DeepBlack)
     ) {
-        // Blurred Background / Silhouette
-        AsyncImage(
-            model = "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=800&q=80",
-            contentDescription = "Blurred Silhouette",
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(radius = 32.dp),
-            contentScale = ContentScale.Crop
-        )
-
-        // Radial Gradient overlay for spotlight effect
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(Color(0x33D4AF37), Color(0xEE000000), DeepBlack),
-                        radius = 1200f
-                    )
-                )
-        )
-
-        // Top Bar
-        TopAppBar(
-            title = { Text("午夜假面", color = Gold, style = Typography.titleLarge, fontFamily = Typography.bodyLarge.fontFamily) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Gold)
+        when (val state = uiState) {
+            is MasqueradeUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Gold)
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                titleContentColor = Gold
-            )
-        )
+            }
+            is MasqueradeUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "加载失败", color = Color.Red)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = state.message, color = Silver)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.fetchStatus() }) {
+                            Text("重试")
+                        }
+                    }
+                }
+            }
+            is MasqueradeUiState.Success -> {
+                val status = state.status
+                // Blurred Background / Silhouette
+                AsyncImage(
+                    model = "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=800&q=80",
+                    contentDescription = "Masquerade Silhouette",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(16.dp),
+                    contentScale = ContentScale.Crop
+                )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
+                // Overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0x99000000), DeepBlack),
+                                startY = 300f
+                            )
+                        )
+                )
 
-            // Venetian Mask / Identity
-            AsyncImage(
-                model = "https://images.unsplash.com/photo-1534062024765-b77ddf40d8aa?auto=format&fit=crop&w=400&q=80",
-                contentDescription = "Mask",
-                modifier = Modifier
-                    .size(160.dp)
-                    .padding(16.dp),
-                contentScale = ContentScale.Inside,
-                alpha = 0.8f
-            )
+                // Close Button
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp)
+                        .statusBarsPadding()
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Silver)
+                }
 
-            Text(
-                text = "揭开面纱倒计时",
-                color = Silver,
-                fontSize = 14.sp,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "02:14:59",
-                color = Gold,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = Typography.bodyLarge.fontFamily
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Taste Match Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xBB131313)),
-                border = BorderStroke(1.dp, Gold),
-                shape = RoundedCornerShape(12.dp)
-            ) {
+                // Content
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "品味契合",
+                        text = "午夜盲盒",
                         color = Gold,
-                        fontSize = 12.sp,
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
+                        letterSpacing = 4.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "The Midnight Masquerade",
+                        color = Silver,
+                        fontSize = 16.sp,
                         letterSpacing = 2.sp
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "“您最偏爱的单一麦芽威士忌是哪一款，以及为何？”",
-                        color = Silver,
-                        fontSize = 18.sp,
-                        lineHeight = 28.sp,
-                        textAlign = TextAlign.Center,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                    )
+                    Spacer(modifier = Modifier.height(48.dp))
+
+                    if (!status.isOpen) {
+                        Text(
+                            text = "未在开放时间\n(敬请期待...)",
+                            color = Silver,
+                            fontSize = 24.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 32.sp
+                        )
+                    } else {
+                        // The Question
+                        Text(
+                            text = "本期灵魂拷问：\n" + status.question,
+                            color = Silver,
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 32.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Answer Input
+                        OutlinedTextField(
+                            value = answerText,
+                            onValueChange = { answerText = it },
+                            placeholder = { Text("输入您的答案以开启匹配...", color = Color.Gray) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                containerColor = Color(0x33000000),
+                                unfocusedBorderColor = Gold,
+                                focusedBorderColor = Silver,
+                                focusedTextColor = Silver,
+                                unfocusedTextColor = Silver
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            maxLines = 4
+                        )
+
+                        Spacer(modifier = Modifier.height(48.dp))
+
+                        // Submit Button
+                        Button(
+                            onClick = { /* TODO: submit answer */ },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)
+                        ) {
+                            Text("开启匹配", fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "回答契合度高的灵魂，将在午夜相遇。",
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Input and Submit
-            OutlinedTextField(
-                value = answerText,
-                onValueChange = { answerText = it },
-                placeholder = { Text("输入您的独特见解...", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Gold,
-                    unfocusedBorderColor = Color(0xFF4D4635),
-                    focusedTextColor = Silver,
-                    unfocusedTextColor = Silver,
-                    cursorColor = Gold,
-                    focusedContainerColor = Color(0x88000000),
-                    unfocusedContainerColor = Color(0x88000000)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                maxLines = 3
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { /* TODO: Submit Answer */ },
-                colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("发送并尝试匹配", fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

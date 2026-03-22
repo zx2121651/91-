@@ -12,10 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,126 +23,123 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MessagesScreen(onNavigateToChat: (String) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepBlack)
-    ) {
-        // Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "私信",
-                color = Silver,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        }
+fun MessagesScreen(
+    onNavigateToChat: (String) -> Unit,
+    viewModel: MessagesViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-        // Concierge Banner
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .background(Color(0xFF1B1B1B))
-                .padding(16.dp)
-                .clickable { onNavigateToChat("礼宾管家 朱利安") },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+    when (val state = uiState) {
+        is MessagesUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Gold)
+            }
+        }
+        is MessagesUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "加载失败", color = Color.Red)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = state.message, color = Silver)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.fetchConversations() }) {
+                        Text("重试")
+                    }
+                }
+            }
+        }
+        is MessagesUiState.Success -> {
+            val conversations = state.conversations
+
+            Column(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color.DarkGray),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .background(DeepBlack)
+                    .padding(top = 16.dp)
             ) {
-                Icon(Icons.Default.Person, contentDescription = "礼宾部", tint = Gold)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text("礼宾管家 朱利安", color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("Aurelian 官方认证", color = Silver, fontSize = 12.sp)
-            }
-        }
+                Text(
+                    text = "私信",
+                    color = Silver,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Message List
-        val messages = listOf(
-            MessageItemData("伊莎贝拉, 28", "我很期待明天的画廊预览...", "14:22", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80", true),
-            MessageItemData("顾子明, 34", "我们要不要在半岛酒店订个...", "昨天", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80", false),
-            MessageItemData("林静恩, 27", "那场化装舞会简直太...", "10月12日", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80", false)
-        )
-
-        LazyColumn(
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            items(messages) { msg ->
-                MessageListItem(msg, onClick = { onNavigateToChat(msg.name) })
-                Divider(color = Color(0xFF303030), thickness = 0.5.dp, modifier = Modifier.padding(start = 80.dp))
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(conversations) { conversation ->
+                        ConversationItem(
+                            conversation = conversation,
+                            onClick = { onNavigateToChat(conversation.convId) } // convId will be used to route
+                        )
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
+                }
             }
         }
     }
 }
 
-data class MessageItemData(val name: String, val snippet: String, val time: String, val avatarUrl: String, val isUnread: Boolean)
-
 @Composable
-fun MessageListItem(msg: MessageItemData, onClick: () -> Unit) {
+fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = msg.avatarUrl,
-            contentDescription = "头像",
+        Box(
             modifier = Modifier
                 .size(56.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .clip(CircleShape)
+                .background(Color(0xFF303030)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.Person, contentDescription = "Avatar", tint = Silver)
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = msg.name,
-                color = if (msg.isUnread) Gold else Silver,
-                fontSize = 16.sp,
-                fontWeight = if (msg.isUnread) FontWeight.Bold else FontWeight.Normal
+                text = "用户 " + conversation.convId, // Temporary logic since Conversation model doesn't have names
+                color = Silver,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = msg.snippet,
-                color = if (msg.isUnread) Silver else Color.Gray,
+                text = conversation.lastMessage,
+                color = Color.Gray,
                 fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(horizontalAlignment = Alignment.End) {
-            Text(text = msg.time, color = Color.Gray, fontSize = 12.sp)
-            if (msg.isUnread) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Gold)
+        if (conversation.unreadCount > 0) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Gold),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = conversation.unreadCount.toString(),
+                    color = Black,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
+    Divider(color = Color(0xFF1B1B1B), thickness = 1.dp, modifier = Modifier.padding(start = 88.dp))
 }
