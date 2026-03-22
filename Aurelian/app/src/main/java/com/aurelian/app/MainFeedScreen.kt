@@ -25,6 +25,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.CircularProgressIndicator
+
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 import androidx.compose.material3.Button
 
 import androidx.compose.ui.Alignment
@@ -50,7 +56,16 @@ fun MainFeedScreen(
     onNavigateToMasquerade: () -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
 ) {
+
     val uiState by viewModel.uiState.collectAsState()
+    var matchedUser by remember { mutableStateOf<User?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.matchEvent.collect { user ->
+            matchedUser = user
+        }
+    }
+
 
     when (val state = uiState) {
         is FeedUiState.Loading -> {
@@ -86,7 +101,26 @@ fun MainFeedScreen(
                         .fillMaxSize()
                         .background(DeepBlack)
                 ) { page ->
-                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade)
+                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                }
+
+                matchedUser?.let { user ->
+                    AlertDialog(
+                        onDismissRequest = { matchedUser = null },
+                        title = { Text(text = "恭喜匹配！", color = Gold, fontWeight = FontWeight.Bold) },
+                        text = { Text("您与 ${user.name} 相互心动了。缘分在午夜绽放，立刻去打个招呼吧！", color = Silver) },
+                        confirmButton = {
+                            TextButton(onClick = { matchedUser = null }) {
+                                Text("立即聊天", color = Gold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { matchedUser = null }) {
+                                Text("继续浏览", color = Color.Gray)
+                            }
+                        },
+                        containerColor = Color(0xFF1B1B1B)
+                    )
                 }
             }
         }
@@ -94,7 +128,7 @@ fun MainFeedScreen(
 }
 
 @Composable
-fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit) {
+fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -170,7 +204,7 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             IconButton(onClick = onNavigateToMasquerade) {
                 Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = Gold, modifier = Modifier.size(32.dp))
             }
-            IconButton(onClick = { /* TODO */ }) {
+            IconButton(onClick = onLike) {
                 Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
             }
             IconButton(onClick = { /* TODO */ }) {
