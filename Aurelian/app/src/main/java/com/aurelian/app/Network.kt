@@ -15,9 +15,11 @@ data class FeedResponse(
 )
 // Response wrappers based on our API_DOCUMENTATION.md
 data class LoginRequest(val email: String, val code: String)
-data class LoginResponse(val token: String, val isNewUser: Boolean)
+data class LoginData(val token: String, val isNewUser: Boolean)
+data class LoginResponse(val data: LoginData)
 data class VerifyInviteRequest(val inviteCode: String)
-data class VerifyInviteResponse(val valid: Boolean, val referrerId: String)
+data class VerifyInviteData(val valid: Boolean, val referrerId: String)
+data class VerifyInviteResponse(val data: VerifyInviteData)
 data class BiometricRequest(val deviceId: String, val signature: String)
 data class BaseResponse(val success: Boolean)
 data class ProfileData(val id: String, val name: String, val membership: String, val isVerified: Boolean)
