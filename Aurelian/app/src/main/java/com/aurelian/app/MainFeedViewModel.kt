@@ -46,7 +46,7 @@ class MainFeedViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = NetworkClient.apiService.likeUser(LikeRequest(user.id))
-                if (response.matched) {
+                if (response.data.matched) {
                     _matchEvent.emit(user)
                 }
             } catch (e: Exception) {
