@@ -20,17 +20,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatScreen(userName: String, onBack: () -> Unit, onNavigateToInvite: () -> Unit) {
+fun ChatScreen(
+    userName: String,
+    onBack: () -> Unit,
+    onNavigateToInvite: () -> Unit,
+    viewModel: ChatViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
     var messageText by remember { mutableStateOf("") }
-    val messages = remember {
-        mutableStateListOf(
-            ChatMessage("非常期待明天的画廊私人预览。", false, "21:14"),
-            ChatMessage("我也是。听说这次展出的几幅后现代作品很值得期待。", true, "21:16"),
-            ChatMessage("", true, "刚刚", isInvitation = true, inviteType = "米其林晚宴", inviteTime = "11月18日, 19:30", inviteLocation = "上海宝格丽酒店", inviteMessage = "希望能与你共进晚餐，探讨上周聊到的现代艺术。")
-        )
+
+    LaunchedEffect(userName) {
+        // Here we use userName as convId. Ideally we pass convId via Navigation.
+        viewModel.loadMessages(userName)
     }
 
     Column(
@@ -38,40 +43,48 @@ fun ChatScreen(userName: String, onBack: () -> Unit, onNavigateToInvite: () -> U
             .fillMaxSize()
             .background(DeepBlack)
     ) {
-        // Top App Bar
         TopAppBar(
-            title = { Text(userName, color = Gold, style = Typography.titleLarge, fontFamily = Typography.bodyLarge.fontFamily) },
+            title = { Text(userName, color = Gold, fontWeight = FontWeight.Bold) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = Gold)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Gold)
                 }
             },
             actions = {
+                // Request Invitation Button (Placeholder for elite feature)
                 IconButton(onClick = onNavigateToInvite) {
-                    Icon(Icons.Default.DateRange, contentDescription = "专属邀约", tint = Gold)
+                    Icon(Icons.Default.Email, contentDescription = "高定私人邀约", tint = Gold)
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF131313),
-                titleContentColor = Gold
-            )
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF131313))
         )
 
-        HorizontalDivider(color = Color(0xFF303030), thickness = 1.dp)
-
-        // Messages List
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(messages) { msg ->
-                if (msg.isInvitation) {
-                    InvitationCardBubble(msg)
-                } else {
-                    ChatBubble(msg)
+        when (val state = uiState) {
+            is ChatUiState.Loading -> {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Gold)
+                }
+            }
+            is ChatUiState.Error -> {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(text = "加载失败: ${state.message}", color = Color.Red)
+                }
+            }
+            is ChatUiState.Success -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    reverseLayout = false // In real app, might want to reverse for chat, but let's stick to standard top-down for now
+                ) {
+                    items(state.messages) { message ->
+                        MessageBubble(
+                            message = message.content,
+                            isMe = message.sender.id == "me",
+                            timestamp = message.timestamp,
+                            isInvitation = false // In a real scenario, this flag would come from a richer Message model or subtype
+                        )
+                    }
                 }
             }
         }
@@ -81,17 +94,18 @@ fun ChatScreen(userName: String, onBack: () -> Unit, onNavigateToInvite: () -> U
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF1B1B1B))
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .navigationBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = messageText,
                 onValueChange = { messageText = it },
-                placeholder = { Text("发送消息...", color = Color.Gray) },
+                placeholder = { Text("输入消息...", color = Color.Gray) },
                 modifier = Modifier.weight(1f),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Gold,
-                    unfocusedBorderColor = Color(0xFF303030),
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
                     focusedTextColor = Silver,
                     unfocusedTextColor = Silver,
                     cursorColor = Gold
@@ -102,137 +116,106 @@ fun ChatScreen(userName: String, onBack: () -> Unit, onNavigateToInvite: () -> U
             IconButton(
                 onClick = {
                     if (messageText.isNotBlank()) {
-                        messages.add(ChatMessage(messageText, true, "刚刚"))
+                        viewModel.sendMessage(messageText)
                         messageText = ""
                     }
                 },
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Gold)
+                    .background(Gold, RoundedCornerShape(24.dp))
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送", tint = Black)
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Black)
             }
         }
     }
 }
 
-data class ChatMessage(
-    val text: String,
-    val isUser: Boolean,
-    val time: String,
-    val isInvitation: Boolean = false,
-    val inviteType: String = "",
-    val inviteTime: String = "",
-    val inviteLocation: String = "",
-    val inviteMessage: String = ""
-)
-
 @Composable
-fun ChatBubble(msg: ChatMessage) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start
+fun MessageBubble(
+    message: String,
+    isMe: Boolean,
+    timestamp: String,
+    isInvitation: Boolean = false,
+    inviteType: String = "",
+    inviteTime: String = "",
+    inviteLocation: String = "",
+    inviteMessage: String = ""
+) {
+    val alignment = if (isMe) Alignment.End else Alignment.Start
+    val bgColor = if (isMe) Color(0xFF3A2B15) else Color(0xFF262626) // Deep gold tint for 'me'
+    val textColor = if (isMe) Gold else Silver
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = alignment
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.75f)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (msg.isUser) 16.dp else 0.dp,
-                        bottomEnd = if (msg.isUser) 0.dp else 16.dp
+        if (isInvitation) {
+            InvitationCard(inviteType, inviteTime, inviteLocation, inviteMessage)
+        } else {
+            Box(
+                modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isMe) 16.dp else 4.dp,
+                            bottomEnd = if (isMe) 4.dp else 16.dp
+                        )
                     )
-                )
-                .background(
-                    if (msg.isUser) Color(0xFFD4AF37) // Gold
-                    else Color(0xFF1B1B1B)
-                )
-                .padding(16.dp)
-        ) {
-            Column {
-                Text(
-                    text = msg.text,
-                    color = if (msg.isUser) Black else Silver,
-                    fontSize = 16.sp,
-                    lineHeight = 24.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = msg.time,
-                    color = if (msg.isUser) Color.DarkGray else Color.Gray,
-                    fontSize = 10.sp,
-                    modifier = Modifier.align(Alignment.End)
-                )
+                    .background(bgColor)
+                    .padding(16.dp)
+            ) {
+                Text(text = message, color = textColor, fontSize = 16.sp, lineHeight = 24.sp)
             }
         }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = timestamp, color = Color.DarkGray, fontSize = 12.sp)
     }
 }
 
 @Composable
-fun InvitationCardBubble(msg: ChatMessage) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start
+fun InvitationCard(type: String, time: String, location: String, message: String) {
+    Box(
+        modifier = Modifier
+            .width(280.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF1B1B1B))
+            .padding(16.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(0.85f),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Gold)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Gold, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("PRIVATE INVITATION", color = Gold, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Email, contentDescription = "Invitation", tint = Gold, modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("专属高定私人邀约", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(type, color = Silver, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DateRange, contentDescription = "Time", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(time, color = Silver, fontSize = 14.sp)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DateRange, contentDescription = "Location", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(location, color = Silver, fontSize = 14.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(message, color = Color.Gray, fontSize = 14.sp, textAlign = TextAlign.Center, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                TextButton(onClick = { /*TODO*/ }) {
+                    Text("婉拒", color = Color.Gray)
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(msg.inviteType, color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = Typography.bodyLarge.fontFamily)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(msg.inviteTime, color = Silver, fontSize = 14.sp)
-                Text(msg.inviteLocation, color = Color.Gray, fontSize = 14.sp)
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = Color(0xFF303030), thickness = 1.dp)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text("“${msg.inviteMessage}”", color = Silver, fontSize = 14.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { /* Decline */ },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4D4635)),
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text("婉拒")
-                    }
-                    Button(
-                        onClick = { /* Accept */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text("接受", fontWeight = FontWeight.Bold)
-                    }
+                Button(onClick = { /*TODO*/ }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) {
+                    Text("接受邀约", fontWeight = FontWeight.Bold)
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = msg.time,
-                    color = Color.Gray,
-                    fontSize = 10.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.End
-                )
             }
         }
     }

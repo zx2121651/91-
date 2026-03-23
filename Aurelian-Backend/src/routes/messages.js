@@ -57,4 +57,43 @@ router.post('/invitations/:id/respond', (req, res) => {
     });
 });
 
+
+// GET /api/v1/messages/conversations/:id/messages
+router.get('/conversations/:id/messages', (req, res) => {
+    const { id } = req.params;
+    // Mock existing messages
+    res.json({
+        data: [
+            {
+                id: "msg_1",
+                sender: { id: "other", name: "对方", bio: "", location: "" },
+                content: "非常期待明天的画廊私人预览。",
+                timestamp: "21:14"
+            },
+            {
+                id: "msg_2",
+                sender: { id: "me", name: "我", bio: "", location: "" },
+                content: "我也是。听说这次展出的几幅后现代作品很值得期待。",
+                timestamp: "21:16"
+            }
+        ]
+    });
+});
+
+// POST /api/v1/messages/send
+router.post('/send', (req, res) => {
+    const { convId, content } = req.body;
+    if (!convId || !content) {
+        return res.status(400).json({ error: 'Missing convId or content' });
+    }
+
+    // Mock successful send
+    res.json({
+        data: {
+            msgId: `msg_${Date.now()}`,
+            timestamp: Date.now()
+        }
+    });
+});
+
 module.exports = router;

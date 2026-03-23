@@ -43,7 +43,10 @@ data class ConversationsListResponse(val data: List<Conversation>)
 data class Admirer(val userId: String, val isBlurred: Boolean)
 data class Conversation(val convId: String, val lastMessage: String, val unreadCount: Int)
 data class SendMessageRequest(val convId: String, val content: String)
-data class SendMessageResponse(val msgId: String, val timestamp: Long)
+data class MessagesListResponse(val data: List<Message>)
+
+data class SendMessageData(val msgId: String, val timestamp: Long)
+data class SendMessageResponse(val data: SendMessageData)
 data class SendInviteRequest(val targetUserId: String, val type: String, val location: String, val time: String, val message: String)
 data class SendInviteResponse(val inviteId: String, val status: String)
 data class RespondInviteRequest(val action: String)
@@ -96,7 +99,7 @@ interface AurelianApiService {
     @GET("api/v1/messages/conversations")
     suspend fun getConversations(): ConversationsListResponse
     @GET("api/v1/messages/conversations/{id}/messages")
-    suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): List<Message>
+    suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): MessagesListResponse
     @POST("api/v1/messages/send")
     suspend fun sendMessage(@Body request: SendMessageRequest): SendMessageResponse
     @POST("api/v1/invitations/send")
