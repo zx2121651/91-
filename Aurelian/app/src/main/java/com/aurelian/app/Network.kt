@@ -56,6 +56,8 @@ data class SubmitAnswerResponse(val status: String)
 data class MasqueradeResponseWrapper(val data: MasqueradeStatusResponse)
 
 data class ReferralsStatusResponse(val inviteCode: String, val remaining: Int)
+data class ReferralsResponseWrapper(val data: ReferralsStatusResponse)
+
 data class UploadUrlRequest(val contentType: String, val fileSize: Long)
 data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
 data class ConfirmMediaRequest(val mediaId: String)
@@ -113,7 +115,7 @@ interface AurelianApiService {
     suspend fun submitMasqueradeAnswer(@Body request: SubmitAnswerRequest): SubmitAnswerResponse
     // 7. Referrals
     @GET("api/v1/referrals/status")
-    suspend fun getReferralsStatus(): ReferralsStatusResponse
+    suspend fun getReferralsStatus(): ReferralsResponseWrapper
     // 8. Media
     @POST("api/v1/media/upload-url")
     suspend fun getUploadUrl(@Body request: UploadUrlRequest): UploadUrlResponse
