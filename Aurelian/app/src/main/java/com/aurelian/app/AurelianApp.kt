@@ -98,11 +98,12 @@ fun AurelianApp() {
                 })
             }
             composable(Screen.Events.route) {
-                EventsScreen(onNavigateToEventDetails = { eventName ->
-                    if (eventName.contains("东方雅集")) {
+                EventsScreen(onNavigateToEventDetails = { eventId ->
+                    if (eventId == "evt_2") {
                         navController.navigate("tea_ceremony")
-                    } else
-                    navController.navigate("eventDetails/${java.net.URLEncoder.encode(eventName, "UTF-8")}")
+                    } else {
+                        navController.navigate("eventDetails/${java.net.URLEncoder.encode(eventId, "UTF-8")}")
+                    }
                 })
             }
             composable(Screen.Profile.route) {
@@ -118,9 +119,9 @@ fun AurelianApp() {
 
                 ChatScreen(userName = userName, onBack = { navController.popBackStack() }, onNavigateToInvite = { navController.navigate("sendInvite/$userName") })
             }
-            composable("eventDetails/{eventName}") { backStackEntry ->
-                val eventName = backStackEntry.arguments?.getString("eventName")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
-                EventDetailsScreen(eventName = eventName, onBack = { navController.popBackStack() })
+            composable("eventDetails/{eventId}") { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
+                EventDetailsScreen(eventId = eventId, onBack = { navController.popBackStack() })
             }
             composable("settings") {
                 SettingsScreen(onBack = { navController.popBackStack() })
