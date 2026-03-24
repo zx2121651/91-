@@ -17,11 +17,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeaCeremonyScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,7 +109,7 @@ fun TeaCeremonyScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(48.dp))
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = { Toast.makeText(context, "已提交雅集参与申请，等待管家确认", Toast.LENGTH_LONG).show() },
                 colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
                 modifier = Modifier
                     .fillMaxWidth()

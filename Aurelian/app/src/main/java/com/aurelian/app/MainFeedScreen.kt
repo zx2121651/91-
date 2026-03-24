@@ -3,6 +3,8 @@ package com.aurelian.app
 import androidx.compose.material.icons.filled.Star
 
 import android.net.Uri
+import android.widget.Toast
+import android.content.Intent
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -207,10 +209,18 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             IconButton(onClick = onLike) {
                 Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
             }
-            IconButton(onClick = { /* TODO */ }) {
+            IconButton(onClick = { Toast.makeText(context, "私密社交，禁止公开评论", Toast.LENGTH_SHORT).show() }) {
                 Icon(Icons.Default.MailOutline, contentDescription = "评论", tint = Gold, modifier = Modifier.size(32.dp))
             }
-            IconButton(onClick = { /* TODO */ }) {
+            IconButton(onClick = {
+                val sendIntent: Intent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, "我正在 Aurelian Night 关注一位品位非凡的会员。快来开启您的私密高定之旅。")
+                    type = "text/plain"
+                }
+                val shareIntent = Intent.createChooser(sendIntent, "分享会员主页")
+                context.startActivity(shareIntent)
+            }) {
                 Icon(Icons.Default.Share, contentDescription = "分享", tint = Gold, modifier = Modifier.size(32.dp))
             }
         }
