@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,6 +34,13 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var messageText by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.actionEvent.collect { message: String ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(userName) {
         // Here we use userName as convId. Ideally we pass convId via Navigation.
@@ -82,7 +91,8 @@ fun ChatScreen(
                             message = message.content,
                             isMe = message.sender.id == "me",
                             timestamp = message.timestamp,
-                            isInvitation = false // In a real scenario, this flag would come from a richer Message model or subtype
+                            isInvitation = false, // In a real scenario, this flag would come from a richer Message model or subtype
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -139,7 +149,8 @@ fun MessageBubble(
     inviteType: String = "",
     inviteTime: String = "",
     inviteLocation: String = "",
-    inviteMessage: String = ""
+    inviteMessage: String = "",
+    viewModel: ChatViewModel
 ) {
     val alignment = if (isMe) Alignment.End else Alignment.Start
     val bgColor = if (isMe) Color(0xFF3A2B15) else Color(0xFF262626) // Deep gold tint for 'me'
@@ -152,7 +163,7 @@ fun MessageBubble(
         horizontalAlignment = alignment
     ) {
         if (isInvitation) {
-            InvitationCard(inviteType, inviteTime, inviteLocation, inviteMessage)
+            InvitationCard(inviteType, inviteTime, inviteLocation, inviteMessage, viewModel)
         } else {
             Box(
                 modifier = Modifier
@@ -176,7 +187,7 @@ fun MessageBubble(
 }
 
 @Composable
-fun InvitationCard(type: String, time: String, location: String, message: String) {
+fun InvitationCard(type: String, time: String, location: String, message: String, viewModel: ChatViewModel) {
     Box(
         modifier = Modifier
             .width(280.dp)
@@ -210,10 +221,10 @@ fun InvitationCard(type: String, time: String, location: String, message: String
 
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                TextButton(onClick = { /*TODO*/ }) {
+                TextButton(onClick = { viewModel.respondToInvitation("inv_mock_id", "DECLINE") }) {
                     Text("婉拒", color = Color.Gray)
                 }
-                Button(onClick = { /*TODO*/ }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) {
+                Button(onClick = { viewModel.respondToInvitation("inv_mock_id", "ACCEPT") }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) {
                     Text("接受邀约", fontWeight = FontWeight.Bold)
                 }
             }

@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -68,6 +71,25 @@ class ChatViewModel : ViewModel() {
                 currentList.remove(tempMsg)
                 _uiState.value = ChatUiState.Success(currentList.toList())
                 // Optional: Emit a snackbar event here
+            }
+        }
+    }
+
+    private val _actionEvent = MutableSharedFlow<String>()
+    val actionEvent = _actionEvent.asSharedFlow()
+
+    fun respondToInvitation(inviteId: String, action: String) {
+        viewModelScope.launch {
+            try {
+                val response = NetworkClient.apiService.respondToInvitation(inviteId, RespondInviteRequest(action))
+                if (response.data.status == "ACCEPTED") {
+                    _actionEvent.emit("您已接受邀约，期待相见")
+                } else if (response.data.status == "DECLINED") {
+                    _actionEvent.emit("您已婉拒邀约")
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Error responding to invite", e)
+                _actionEvent.emit("操作失败，网络异常")
             }
         }
     }

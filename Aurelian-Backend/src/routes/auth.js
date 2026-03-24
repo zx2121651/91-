@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'aurelian_super_secret_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Login Mock
 router.post('/login', (req, res) => {
