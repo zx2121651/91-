@@ -44,116 +44,86 @@ fun SubscriptionScreen(onBack: () -> Unit) {
             )
         )
 
-        HorizontalDivider(color = Color(0xFF303030), thickness = 1.dp)
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "解锁无尽之夜",
+                color = Gold,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "提升您的圈层体验，享受最高级别的私密与特权。",
+                color = Silver,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "提升您的私密社交体验",
-            color = Silver,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "专为世界上最具影响力的 1% 精英打造的三个阶层。",
-            color = Color.Gray,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
+            Spacer(modifier = Modifier.height(40.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+            // Premium Features
+            FeatureItem("隐身模式", "无痕浏览，仅让您心动的人看到您。")
+            FeatureItem("尊享标识", "专属暗金徽章，彰显您的非凡品味。")
+            FeatureItem("全球漫游", "打破地域限制，结识世界各地的顶尖人物。")
+            FeatureItem("优先引荐", "每月获得 5 个额外的内部邀请名额。")
+            FeatureItem("专属礼宾", "一对一 24/7 私人管家服务，预订顶级沙龙。")
 
-        // Tier 1: The Elite
-        MembershipCard(
-            title = "The Elite 菁英",
-            price = "¥1,999 /月",
-            features = listOf("无限次点赞与私信", "基础高净值身份认证", "每月 1 次全球私密沙龙资格"),
-            isPopular = false,
-            cardColor = Color(0xFF1B1B1B)
-        )
+            Spacer(modifier = Modifier.height(48.dp))
 
-        // Tier 2: The Royal (Featured)
-        MembershipCard(
-            title = "The Royal 皇家",
-            price = "¥5,999 /月",
-            features = listOf("包含 The Elite 所有特权", "全球漫游与隐身无痕模式", "优先匹配当地 TOP 10% 佳宾", "专属私人礼宾部 (工作日)"),
-            isPopular = true,
-            cardColor = Color(0xFF2A2A2A),
-            borderColor = Gold
-        )
+            // Plan Selection
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                border = BorderStroke(1.dp, Gold)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("皇家会籍 (Royal)", color = Gold, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("¥3,999", color = Silver, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+                    Text("/ 年", color = Color.Gray, fontSize = 16.sp)
+                }
+            }
 
-        // Tier 3: The Sovereign
-        MembershipCard(
-            title = "The Sovereign 尊贵黑卡",
-            price = "仅限内推邀请",
-            features = listOf("无需排队，直接对接财阀及名流", "24/7 全天候黑金级私人管家", "所有全球高定闭门派对 VIP 席位", "完全脱离线上算法的定制化引荐"),
-            isPopular = false,
-            cardColor = Black,
-            borderColor = Color.DarkGray
-        )
+            Spacer(modifier = Modifier.height(48.dp))
 
-        Spacer(modifier = Modifier.height(48.dp))
+            Button(
+                onClick = { Toast.makeText(context, "正在连接加密黑卡支付网关...", Toast.LENGTH_LONG).show() },
+                colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("立即开通 / 续费", fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+        }
     }
 }
 
 @Composable
-fun MembershipCard(
-    title: String,
-    price: String,
-    features: List<String>,
-    isPopular: Boolean,
-    cardColor: Color,
-    borderColor: Color = Color.Transparent
-) {
-    Card(
+fun FeatureItem(title: String, description: String) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(if (borderColor != Color.Transparent) 1.dp else 0.dp, borderColor)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            if (isPopular) {
-                Text(
-                    text = "最受高净值人群青睐",
-                    color = Gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            Text(title, color = if (isPopular) Gold else Silver, fontSize = 28.sp, fontWeight = FontWeight.Bold, fontFamily = Typography.bodyLarge.fontFamily)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(price, color = Silver, fontSize = 20.sp, fontWeight = FontWeight.Normal)
-            Spacer(modifier = Modifier.height(24.dp))
-
-            features.forEach { feature ->
-                Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Gold, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(feature, color = Silver, fontSize = 14.sp, lineHeight = 20.sp)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(
-                onClick = { /* TODO */ },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (title.contains("Sovereign")) Color(0xFF303030) else Gold,
-                    contentColor = if (title.contains("Sovereign")) Silver else Black
-                ),
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    if (title.contains("Sovereign")) "提交资产认证" else "选择该会籍",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-            }
+        Icon(Icons.Default.CheckCircle, contentDescription = "Feature", tint = Gold, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(title, color = Silver, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(description, color = Color.Gray, fontSize = 14.sp)
         }
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,6 +24,7 @@ fun LoginScreen(
     viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
 
@@ -85,6 +87,22 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("密码", color = Color.Gray) },
+                visualTransformation = PasswordVisualTransformation(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Gold,
+                    unfocusedBorderColor = Color(0xFF303030),
+                    focusedTextColor = Silver,
+                    unfocusedTextColor = Silver
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
                 value = inviteCode,
                 onValueChange = { inviteCode = it },
                 label = { Text("高定邀请码 (新会员)", color = Color.Gray) },
@@ -100,7 +118,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             Button(
-                onClick = { viewModel.login(email, inviteCode) },
+                onClick = { viewModel.login(email, password, inviteCode) },
                 colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
                 modifier = Modifier
                     .fillMaxWidth()

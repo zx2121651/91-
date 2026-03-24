@@ -20,7 +20,7 @@ class AuthViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    fun login(email: String, inviteCode: String) {
+    fun login(email: String, password: String, inviteCode: String) {
         if (email.isBlank()) {
             _uiState.value = AuthUiState.Error("邮箱/会员号不能为空")
             return
@@ -30,7 +30,7 @@ class AuthViewModel : ViewModel() {
             _uiState.value = AuthUiState.Loading
             try {
                 // 1. Authenticate with backend
-                val loginResponse = NetworkClient.apiService.login(LoginRequest(email, "123456")) // "123456" is mock code based on API doc
+                val loginResponse = NetworkClient.apiService.login(LoginRequest(email, password)) // "123456" is mock code based on API doc
                 val loginData = loginResponse.data
 
                 // 2. Check if new user and needs invite code verification

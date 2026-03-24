@@ -82,7 +82,10 @@ fun SettingsScreen(onBack: () -> Unit) {
             Text("您的流动资产评估报告已通过由瑞银集团 (UBS) 提供的联合审核。", color = Color.Gray, fontSize = 12.sp, lineHeight = 18.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { /* TODO */ },
+                onClick = {
+                    Toast.makeText(context, "已安全退出您的账户，期待您的下次光临", Toast.LENGTH_SHORT).show()
+                    onBack()
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A2A), contentColor = Gold),
                 modifier = Modifier.fillMaxWidth()
             ) {
