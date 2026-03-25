@@ -51,6 +51,11 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import coil.compose.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -133,11 +138,24 @@ fun MainFeedScreen(
 @Composable
 fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
+    var isVideoReady by remember { mutableStateOf(false) }
+
     val exoPlayer = remember {
+        val cacheDataSourceFactory = VideoCacheManager.getCacheDataSourceFactory()
+        val mediaItem = MediaItem.fromUri(Uri.parse(user.videoUrl))
+        val mediaSource = ProgressiveMediaSource.Factory(cacheDataSourceFactory)
+            .createMediaSource(mediaItem)
+
         ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri(Uri.parse(user.videoUrl))
-            setMediaItem(mediaItem)
+            setMediaSource(mediaSource)
             repeatMode = Player.REPEAT_MODE_ALL
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_READY) {
+                        isVideoReady = true
+                    }
+                }
+            })
             prepare()
         }
     }
@@ -157,18 +175,32 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Video Player Background
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                    layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                }
-            },
+        // Background Placeholder (Cover Image)
+        AsyncImage(
+            model = user.videoUrl,
+            contentDescription = "Cover Image",
+            contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
+
+        // Video Player Background with Fade-in Animation
+        AnimatedVisibility(
+            visible = isVideoReady,
+            enter = fadeIn(animationSpec = tween(700)),
+            exit = fadeOut()
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        player = exoPlayer
+                        useController = false
+                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Minimalist Gradient overlay for readability at the bottom
         Box(
