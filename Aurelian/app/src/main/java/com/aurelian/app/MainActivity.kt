@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        VideoCacheManager.initialize(applicationContext)
         setContent {
             AurelianTheme {
                 Surface(
