@@ -169,59 +169,92 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             modifier = Modifier.fillMaxSize()
         )
 
-        // Gradient overlay for bottom text
+        // Minimalist Gradient overlay for readability at the bottom
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(0.35f) // Gradient only covers the bottom 35%
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xCC000000)),
-                        startY = 500f
+                        colors = listOf(Color.Transparent, Color(0xE6131313)), // DeepBlack with 90% opacity
+                        startY = 0f
                     )
                 )
         )
 
-        // User Info Overlay (Bottom Left)
+        // Extremely clean User Info Overlay (Bottom Left)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .padding(bottom = 80.dp) // Leave space for BottomNav
+                .padding(start = 16.dp, end = 64.dp, bottom = 90.dp) // Leave space for BottomNav and Right Actions
         ) {
-            Text(user.name, color = Silver, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(user.location, color = Gold, fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(user.bio, color = Silver, fontSize = 16.sp)
+            Text(
+                text = user.name,
+                color = Silver,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = user.location.uppercase(),
+                color = Gold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = user.bio,
+                color = Silver.copy(alpha = 0.8f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
         }
 
-        // Actions Overlay (Right Side)
+        // Minimalist Actions Overlay (Right Side)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .padding(bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(end = 12.dp, bottom = 90.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            IconButton(onClick = onNavigateToMasquerade) {
-                Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = Gold, modifier = Modifier.size(32.dp))
+            val iconTint = Gold.copy(alpha = 0.85f)
+            val iconSize = 26.dp
+
+            IconButton(
+                onClick = onNavigateToMasquerade,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = iconTint, modifier = Modifier.size(iconSize))
             }
-            IconButton(onClick = onLike) {
-                Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = Gold, modifier = Modifier.size(32.dp))
+            IconButton(
+                onClick = onLike,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = iconTint, modifier = Modifier.size(iconSize))
             }
-            IconButton(onClick = { Toast.makeText(context, "私密社交，禁止公开评论", Toast.LENGTH_SHORT).show() }) {
-                Icon(Icons.Default.MailOutline, contentDescription = "评论", tint = Gold, modifier = Modifier.size(32.dp))
+            IconButton(
+                onClick = { Toast.makeText(context, "私密社交，禁止公开评论", Toast.LENGTH_SHORT).show() },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Default.MailOutline, contentDescription = "评论", tint = iconTint, modifier = Modifier.size(iconSize))
             }
-            IconButton(onClick = {
-                val sendIntent: Intent = Intent().apply {
-                    action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, "我正在 Aurelian Night 关注一位品位非凡的会员。快来开启您的私密高定之旅。")
-                    type = "text/plain"
-                }
-                val shareIntent = Intent.createChooser(sendIntent, "分享会员主页")
-                context.startActivity(shareIntent)
-            }) {
-                Icon(Icons.Default.Share, contentDescription = "分享", tint = Gold, modifier = Modifier.size(32.dp))
+            IconButton(
+                onClick = {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "我正在 Aurelian Night 关注一位品位非凡的会员。快来开启您的私密高定之旅。")
+                        type = "text/plain"
+                    }
+                    val shareIntent = Intent.createChooser(sendIntent, "分享会员主页")
+                    context.startActivity(shareIntent)
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(Icons.Default.Share, contentDescription = "分享", tint = iconTint, modifier = Modifier.size(iconSize))
             }
         }
     }
