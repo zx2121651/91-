@@ -139,16 +139,21 @@ fun MainFeedScreen(
 fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
+    var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
 
-    val exoPlayer = remember {
+    // Use DisposableEffect tied to user.id or URL to ensure it correctly manages the player instance
+    DisposableEffect(user.id) {
+        val player = ExoPlayerPool.acquirePlayer(context)
+
         val cacheDataSourceFactory = VideoCacheManager.getCacheDataSourceFactory()
         val mediaItem = MediaItem.fromUri(Uri.parse(user.videoUrl))
         val mediaSource = ProgressiveMediaSource.Factory(cacheDataSourceFactory)
             .createMediaSource(mediaItem)
 
-        ExoPlayer.Builder(context).build().apply {
+        player.apply {
             setMediaSource(mediaSource)
             repeatMode = Player.REPEAT_MODE_ALL
+
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
@@ -158,19 +163,22 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             })
             prepare()
         }
-    }
 
-    LaunchedEffect(isSelected) {
-        if (isSelected) {
-            exoPlayer.play()
-        } else {
-            exoPlayer.pause()
+        exoPlayer = player
+
+        onDispose {
+            // Return to pool instead of releasing completely
+            ExoPlayerPool.releasePlayer(player)
+            exoPlayer = null
+            isVideoReady = false
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
+    LaunchedEffect(isSelected, exoPlayer) {
+        if (isSelected) {
+            exoPlayer?.play()
+        } else {
+            exoPlayer?.pause()
         }
     }
 
@@ -189,17 +197,22 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             enter = fadeIn(animationSpec = tween(700)),
             exit = fadeOut()
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        useController = false
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            exoPlayer?.let { player ->
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            this.player = player
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    update = { view ->
+                        view.player = player
                     }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+                )
+            }
         }
 
         // Minimalist Gradient overlay for readability at the bottom
