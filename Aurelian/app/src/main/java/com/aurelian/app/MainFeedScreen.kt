@@ -50,14 +50,20 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import coil.compose.AsyncImage
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainFeedScreen(
@@ -77,8 +83,32 @@ fun MainFeedScreen(
 
     when (val state = uiState) {
         is FeedUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Gold)
+            // High-end Skeleton Loader (Breathing Animation)
+            val infiniteTransition = rememberInfiniteTransition(label = "breathing")
+            val alpha by infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 0.7f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1200, easing = LinearEasing),
+                    repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                ),
+                label = "alpha"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DeepBlack),
+                contentAlignment = Alignment.Center
+            ) {
+                // Instead of a cheap spinner, we show a glowing luxury motif or placeholder
+                Text(
+                    text = "AURELIAN NIGHT",
+                    color = Gold.copy(alpha = alpha),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 4.sp
+                )
             }
         }
         is FeedUiState.Error -> {
@@ -102,6 +132,19 @@ fun MainFeedScreen(
                 }
             } else {
                 val pagerState = rememberPagerState(pageCount = { users.size })
+
+                // Smart preloading and cancelling based on scroll state
+                LaunchedEffect(pagerState.currentPage) {
+                    val currentIdx = pagerState.currentPage
+
+                    // Preload next and next+1
+                    if (currentIdx + 1 < users.size) viewModel.preloadVideo(users[currentIdx + 1].videoUrl)
+                    if (currentIdx + 2 < users.size) viewModel.preloadVideo(users[currentIdx + 2].videoUrl)
+
+                    // Cancel preloading for far away items to save bandwidth
+                    if (currentIdx - 2 >= 0) viewModel.cancelPreload(users[currentIdx - 2].videoUrl)
+                    if (currentIdx + 3 < users.size) viewModel.cancelPreload(users[currentIdx + 3].videoUrl)
+                }
 
                 VerticalPager(
                     state = pagerState,
@@ -139,16 +182,21 @@ fun MainFeedScreen(
 fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
+    var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
 
-    val exoPlayer = remember {
+    // Use DisposableEffect tied to user.id or URL to ensure it correctly manages the player instance
+    DisposableEffect(user.id) {
+        val player = ExoPlayerPool.acquirePlayer(context)
+
         val cacheDataSourceFactory = VideoCacheManager.getCacheDataSourceFactory()
         val mediaItem = MediaItem.fromUri(Uri.parse(user.videoUrl))
         val mediaSource = ProgressiveMediaSource.Factory(cacheDataSourceFactory)
             .createMediaSource(mediaItem)
 
-        ExoPlayer.Builder(context).build().apply {
+        player.apply {
             setMediaSource(mediaSource)
             repeatMode = Player.REPEAT_MODE_ALL
+
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_READY) {
@@ -158,47 +206,59 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             })
             prepare()
         }
-    }
 
-    LaunchedEffect(isSelected) {
-        if (isSelected) {
-            exoPlayer.play()
-        } else {
-            exoPlayer.pause()
+        exoPlayer = player
+
+        onDispose {
+            // Return to pool instead of releasing completely
+            ExoPlayerPool.releasePlayer(player)
+            exoPlayer = null
+            isVideoReady = false
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
+    LaunchedEffect(isSelected, exoPlayer) {
+        if (isSelected) {
+            exoPlayer?.play()
+        } else {
+            exoPlayer?.pause()
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background Placeholder (Cover Image)
-        AsyncImage(
-            model = user.videoUrl,
-            contentDescription = "Cover Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Video Player Background with Fade-in Animation
-        AnimatedVisibility(
-            visible = isVideoReady,
-            enter = fadeIn(animationSpec = tween(700)),
-            exit = fadeOut()
-        ) {
+        // Base Layer: Video Player
+        exoPlayer?.let { player ->
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
-                        player = exoPlayer
+                        this.player = player
                         useController = false
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                         layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        val videoSurfaceView = this.videoSurfaceView
+                        if (videoSurfaceView is android.view.SurfaceView) {
+                            videoSurfaceView.setZOrderMediaOverlay(false)
+                        }
                     }
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                update = { view ->
+                    view.player = player
+                }
+            )
+        }
+
+        // Overlay Layer 1: Cover Image Placeholder
+        AnimatedVisibility(
+            visible = !isVideoReady,
+            enter = fadeIn(),
+            exit = fadeOut(animationSpec = tween(700))
+        ) {
+            AsyncImage(
+                model = user.videoUrl,
+                contentDescription = "Cover Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().background(DeepBlack)
             )
         }
 
