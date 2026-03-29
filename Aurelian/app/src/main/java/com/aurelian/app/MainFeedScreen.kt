@@ -50,6 +50,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.compose.animation.AnimatedVisibility
@@ -58,6 +59,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import coil.compose.AsyncImage
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainFeedScreen(
@@ -102,6 +104,19 @@ fun MainFeedScreen(
                 }
             } else {
                 val pagerState = rememberPagerState(pageCount = { users.size })
+
+                // Smart preloading and cancelling based on scroll state
+                LaunchedEffect(pagerState.currentPage) {
+                    val currentIdx = pagerState.currentPage
+
+                    // Preload next and next+1
+                    if (currentIdx + 1 < users.size) viewModel.preloadVideo(users[currentIdx + 1].videoUrl)
+                    if (currentIdx + 2 < users.size) viewModel.preloadVideo(users[currentIdx + 2].videoUrl)
+
+                    // Cancel preloading for far away items to save bandwidth
+                    if (currentIdx - 2 >= 0) viewModel.cancelPreload(users[currentIdx - 2].videoUrl)
+                    if (currentIdx + 3 < users.size) viewModel.cancelPreload(users[currentIdx + 3].videoUrl)
+                }
 
                 VerticalPager(
                     state = pagerState,

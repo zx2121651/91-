@@ -1,6 +1,7 @@
 package com.aurelian.app
 
 import android.util.Log
+import androidx.media3.common.util.UnstableApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,19 +76,23 @@ class MainFeedViewModel : ViewModel() {
     val matchEvent: SharedFlow<User> = _matchEvent.asSharedFlow()
 
 
+    @androidx.media3.common.util.UnstableApi
     fun preloadVideo(url: String?) {
         if (url == null) return
         viewModelScope.launch {
             try {
-                val cacheDataSourceFactory = VideoCacheManager.getCacheDataSourceFactory()
-                val mediaItem = MediaItem.fromUri(Uri.parse(url))
-                // Simplified prefetching: just creating the source triggers a partial buffering if configured,
-                // For a robust implementation, a CacheWriter should be used to fetch the first 2MB.
-                // Due to Media3 API complexity, we delegate the cache miss resolution to ExoPlayer internally.
+                // Delegate to our new dedicated VideoPrefetcher which efficiently fetches only 2MB
+                VideoPrefetcher.prefetch(url)
             } catch (e: Exception) {
-                Log.e("MainFeedViewModel", "Error preloading", e)
+                Log.e("MainFeedViewModel", "Error preloading $url", e)
             }
         }
+    }
+
+    // Optional: Expose cancel prefetch if we decide to wire it to UI events
+    @androidx.media3.common.util.UnstableApi
+    fun cancelPreload(url: String?) {
+        VideoPrefetcher.cancelPrefetch(url)
     }
 
     fun likeUser(user: User) {
