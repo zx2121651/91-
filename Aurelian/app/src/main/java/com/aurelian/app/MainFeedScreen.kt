@@ -198,36 +198,40 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background Placeholder (Cover Image)
-        AsyncImage(
-            model = user.videoUrl,
-            contentDescription = "Cover Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Video Player Background with Fade-in Animation
-        AnimatedVisibility(
-            visible = isVideoReady,
-            enter = fadeIn(animationSpec = tween(700)),
-            exit = fadeOut()
-        ) {
-            exoPlayer?.let { player ->
-                AndroidView(
-                    factory = { ctx ->
-                        PlayerView(ctx).apply {
-                            this.player = player
-                            useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        // Base Layer: Video Player
+        exoPlayer?.let { player ->
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        this.player = player
+                        useController = false
+                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        val videoSurfaceView = this.videoSurfaceView
+                        if (videoSurfaceView is android.view.SurfaceView) {
+                            videoSurfaceView.setZOrderMediaOverlay(false)
                         }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { view ->
-                        view.player = player
                     }
-                )
-            }
+                },
+                modifier = Modifier.fillMaxSize(),
+                update = { view ->
+                    view.player = player
+                }
+            )
+        }
+
+        // Overlay Layer 1: Cover Image Placeholder
+        AnimatedVisibility(
+            visible = !isVideoReady,
+            enter = fadeIn(),
+            exit = fadeOut(animationSpec = tween(700))
+        ) {
+            AsyncImage(
+                model = user.videoUrl,
+                contentDescription = "Cover Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().background(DeepBlack)
+            )
         }
 
         // Minimalist Gradient overlay for readability at the bottom
