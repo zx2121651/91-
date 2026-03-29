@@ -25,11 +25,11 @@ class FeedRepository {
         }
 
         try {
-            // 2. Simulate high-latency network (e.g., 1.5s delay to represent heavy backend)
-            Log.d("FeedRepository", "Fetching from NETWORK...")
-            delay(1500)
+            Log.d("FeedRepository", "Fetching from NETWORK via API...")
 
-            val networkData = fetchMockNetworkData()
+            // Call the real Express.js backend running on localhost:3000 (10.0.2.2 for Android)
+            val response = NetworkClient.apiService.getFeedVideos()
+            val networkData = response.data
 
             // Update cache
             cachedFeed = networkData
