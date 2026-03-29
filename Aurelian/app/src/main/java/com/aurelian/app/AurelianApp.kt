@@ -23,6 +23,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Discover : Screen("discover", "发现", Icons.Default.Home)
     object Matches : Screen("matches", "心动", Icons.Default.Favorite)
     object Messages : Screen("messages", "私信", Icons.Default.Email)
+    object Hookups : Screen("hookups", "速约", Icons.Default.Favorite)
     object Events : Screen("events", "沙龙", Icons.Default.Person)
     object Profile : Screen("profile", "我的", Icons.Default.Person)
 }
@@ -31,6 +32,7 @@ val items = listOf(
     Screen.Discover,
     Screen.Matches,
     Screen.Messages,
+    Screen.Hookups,
     Screen.Events,
     Screen.Profile
 )
@@ -97,6 +99,7 @@ fun AurelianApp() {
                     navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
                 })
             }
+            composable(Screen.Hookups.route) { HookupsScreen() }
             composable(Screen.Events.route) {
                 EventsScreen(onNavigateToEventDetails = { eventId ->
                     if (eventId == "evt_2") {
