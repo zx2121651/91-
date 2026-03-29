@@ -14,6 +14,7 @@ const messagesRoutes = require('./src/routes/messages');
 const masqueradeRoutes = require('./src/routes/masquerade');
 const referralsRoutes = require('./src/routes/referrals');
 const mediaRoutes = require('./src/routes/media');
+const hookupsRoutes = require('./src/routes/hookups');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +37,7 @@ app.use('/api/v1/invitations', messagesRoutes); // Routing invitations via messa
 app.use('/api/v1/masquerade', masqueradeRoutes);
 app.use('/api/v1/referrals', referralsRoutes);
 app.use('/api/v1/media', mediaRoutes);
+app.use('/api/v1/hookups', hookupsRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
