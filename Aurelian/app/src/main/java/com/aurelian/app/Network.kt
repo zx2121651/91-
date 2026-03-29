@@ -71,6 +71,22 @@ data class UploadUrlRequest(val contentType: String, val fileSize: Long)
 data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
 data class ConfirmMediaRequest(val mediaId: String)
 data class ConfirmMediaResponse(val success: Boolean, val processing: Boolean)
+
+data class HookupCard(
+    val userId: String,
+    val name: String,
+    val age: Int,
+    val city: String,
+    val bio: String,
+    val intent: String,
+    val tags: List<String>,
+    val avatarUrl: String
+)
+data class HookupsMeta(val total: Int, val city: String?, val intent: String?)
+data class HookupsResponse(val data: List<HookupCard>, val nextCursor: String?, val meta: HookupsMeta? = null)
+data class HookupRequest(val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String = "DRINK")
+data class HookupRequestData(val requestId: String, val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String, val status: String, val createdAt: Long)
+data class HookupRequestResponse(val data: HookupRequestData)
 interface AurelianApiService {
     // 1. Auth & Gatekeeping
     @POST("api/v1/auth/login")
@@ -130,6 +146,19 @@ interface AurelianApiService {
     suspend fun getUploadUrl(@Body request: UploadUrlRequest): UploadUrlResponse
     @POST("api/v1/media/confirm")
     suspend fun confirmMedia(@Body request: ConfirmMediaRequest): ConfirmMediaResponse
+
+    // 9. Hookups
+    @GET("api/v1/hookups/cards")
+    suspend fun getHookupCards(
+        @Query("city") city: String? = null,
+        @Query("intent") intent: String? = null,
+        @Query("limit") limit: Int = 10,
+        @Query("cursor") cursor: String? = null
+    ): HookupsResponse
+    @POST("api/v1/hookups/request")
+    suspend fun sendHookupRequest(@Body request: HookupRequest): HookupRequestResponse
+    @GET("api/v1/hookups/request/{id}")
+    suspend fun getHookupRequestStatus(@Path("id") id: String): HookupRequestResponse
 }
 object NetworkClient {
     private const val BASE_URL = "http://10.0.2.2:3000/"
