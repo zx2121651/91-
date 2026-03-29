@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -23,6 +24,9 @@ sealed class FeedUiState {
 
 class MainFeedViewModel : ViewModel() {
 
+    // Simple manual injection of our new Repository
+    private val repository = FeedRepository()
+
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
@@ -32,46 +36,23 @@ class MainFeedViewModel : ViewModel() {
 
     fun fetchVideos() {
         viewModelScope.launch {
-            _uiState.value = FeedUiState.Loading
-            try {
-                // Forcing the use of extreme mock data for UI boundary testing
-                // Injecting real H.264/HEVC mock video streams for testing cache and rendering
-                val mockData = listOf(
-                    User(
-                        id = "mock_user_1",
-                        name = "Alexandre R.",
-                        location = "Monaco Yacht Club",
-                        bio = "Enjoying the summer breeze. #Monaco",
-                        videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                    ),
-                    User(
-                        id = "mock_user_2",
-                        name = "Eleanor V.",
-                        location = "Paris, France",
-                        bio = "Night stroll around the Louvre.",
-                        videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
-                    ),
-                    User(
-                        id = "mock_user_3",
-                        name = "Sebastian K.",
-                        location = "Geneva, Switzerland",
-                        bio = "Testing the limits of time.",
-                        videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
-                    )
-                )
+            if (_uiState.value !is FeedUiState.Success) {
+                _uiState.value = FeedUiState.Loading
+            }
 
-                // Pre-cache the first video immediately
-                preloadVideo(mockData.firstOrNull()?.videoUrl)
-                _uiState.value = FeedUiState.Success(mockData)
-                // val response = NetworkClient.apiService.getFeedVideos()
-                // _uiState.value = FeedUiState.Success(response.data)
-            } catch (e: Exception) {
-                Log.e("MainFeedViewModel", "Error fetching videos", e)
-                _uiState.value = FeedUiState.Error(e.localizedMessage ?: "网络错误或服务器未启动")
+            repository.getFeedVideos().collectLatest { result ->
+                result.onSuccess { users ->
+                    _uiState.value = FeedUiState.Success(users)
+                    preloadVideo(users.firstOrNull()?.videoUrl)
+                }.onFailure { exception ->
+                    Log.e("MainFeedViewModel", "Failed to fetch videos from repository", exception)
+                    if (_uiState.value !is FeedUiState.Success) {
+                        _uiState.value = FeedUiState.Error(exception.localizedMessage ?: "网络错误或服务器未响应")
+                    }
+                }
             }
         }
     }
-
     private val _matchEvent = MutableSharedFlow<User>()
     val matchEvent: SharedFlow<User> = _matchEvent.asSharedFlow()
 

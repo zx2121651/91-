@@ -55,6 +55,10 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import coil.compose.AsyncImage
@@ -79,8 +83,32 @@ fun MainFeedScreen(
 
     when (val state = uiState) {
         is FeedUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Gold)
+            // High-end Skeleton Loader (Breathing Animation)
+            val infiniteTransition = rememberInfiniteTransition(label = "breathing")
+            val alpha by infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 0.7f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1200, easing = LinearEasing),
+                    repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                ),
+                label = "alpha"
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DeepBlack),
+                contentAlignment = Alignment.Center
+            ) {
+                // Instead of a cheap spinner, we show a glowing luxury motif or placeholder
+                Text(
+                    text = "AURELIAN NIGHT",
+                    color = Gold.copy(alpha = alpha),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 4.sp
+                )
             }
         }
         is FeedUiState.Error -> {
