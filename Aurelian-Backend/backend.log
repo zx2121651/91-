@@ -1,3 +1,9 @@
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
 Server is running on port 3000
-[0mGET /api/v1/feed/videos [32m200[0m 3.686 ms - 395[0m
+[0mGET /api/v1/feed/videos [33m401[0m 4.776 ms - 70[0m
+[0mPOST /api/v1/auth/login [32m200[0m 9.115 ms - 244[0m
+[0mPOST /api/v1/auth/login [32m200[0m 1.389 ms - 245[0m
+[0mGET /api/v1/feed/videos [33m403[0m 2.576 ms - 157[0m
+[0mPOST /api/v1/auth/login [32m200[0m 0.804 ms - 230[0m
+[SECURE FEED] Delivering high-end content to active user: usr_1002
+[0mGET /api/v1/feed/videos [32m200[0m 1.342 ms - 609[0m
