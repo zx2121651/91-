@@ -1,3 +1,11 @@
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
 [WEBSOCKET] Socket.io server initialized.
 Server (HTTP + WS) is running on port 3000
+[0mPOST /api/v1/auth/login [32m200[0m 7.823 ms - 244[0m
+[VETTING STREAM] User usr_1775213590978 is now waiting at the Velvet Rope.
+[VETTING STREAM] Approving user usr_1775213590978 automatically after 10s...
+[0mGET /api/v1/vetting/stream [32m200[0m 2.576 ms - -[0m
+[VETTING STREAM] User usr_1775213590978 disconnected from the Velvet Rope.
+[0mPOST /api/v1/auth/login [32m200[0m 1.360 ms - 245[0m
+[VETTING STREAM] User usr_1775213590978 is now waiting at the Velvet Rope.
+[VETTING STREAM] Approving user usr_1775213590978 automatically after 10s...
