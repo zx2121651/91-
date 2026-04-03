@@ -1,28 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
 
-// GET /api/v1/matches
-router.get('/', (req, res) => {
-    res.json({
+// High-end matching
+router.get('/', verifyToken, requireActiveStatus, (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    res.status(200).json({
         data: [
             {
-                matchId: "mtc_101",
-                isNew: true,
+                matchId: "match_xyz_1",
                 user: {
-                    userId: "usr_5",
-                    name: "沈修明, 32",
-                    location: "香港",
-                    coverUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
-                }
-            },
-            {
-                matchId: "mtc_102",
-                isNew: false,
-                user: {
-                    userId: "usr_6",
-                    name: "Marcus, 35",
-                    location: "London",
-                    coverUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"
+                    id: "usr_match_1",
+                    name: "Charlotte D.",
+                    location: "London, UK",
+                    bio: "Curator at large.",
+                    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
                 }
             }
         ]

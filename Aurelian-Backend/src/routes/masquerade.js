@@ -1,33 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
 
-// GET /api/v1/masquerade/status
-router.get('/status', (req, res) => {
-    // Simulate Friday Midnight event
+// Midnight Masquerade (Anonymous, high-intellect blind matching)
+router.get('/status', verifyToken, requireActiveStatus, (req, res) => {
+    // Only open during specific hours, mock open for now
     const now = new Date();
-    const isFriday = now.getDay() === 5;
+    const isOpen = now.getHours() >= 22 || now.getHours() <= 4;
 
-    res.json({
+    res.status(200).json({
         data: {
-            isOpen: isFriday, // Only open on Fridays
-            endTime: Date.now() + 7200000, // 2 hours from now
-            question: "品味契合：您最偏爱的单一麦芽威士忌是哪一款，以及为何？"
+            isOpen: true, // Mocking to true so client can test
+            endTime: Date.now() + 3600000,
+            question: "What is the most profound lesson you've learned from a failure?"
         }
     });
 });
 
-// POST /api/v1/masquerade/submit
-router.post('/submit', (req, res) => {
+router.post('/submit', verifyToken, requireActiveStatus, (req, res) => {
     const { answer } = req.body;
-    if (!answer || answer.length < 10) {
-        return res.status(400).json({ error: '您的见解过于简短，请详细描述您的品味。' });
+    if (!answer || answer.length < 20) {
+        return res.status(400).json({ error: "Answers must be substantive." });
     }
 
-    res.json({
-        data: {
-            status: "MATCHING_IN_PROGRESS",
-            message: "您的见解已提交，正在为您在全球精英库中寻找共鸣的灵魂。"
-        }
+    console.log(`[MASQUERADE] User ${req.user.id} submitted profound thought: "${answer.substring(0, 30)}..."`);
+
+    res.status(200).json({
+        data: { status: "AWAITING_MATCH" }
     });
 });
 
