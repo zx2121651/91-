@@ -1,46 +1,31 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
 
-// POST /api/v1/interactions/like
-router.post('/like', (req, res) => {
+// Interaction Core Engine
+router.post('/like', verifyToken, requireActiveStatus, (req, res) => {
     const { targetUserId } = req.body;
-    if (!targetUserId) {
-        return res.status(400).json({ error: 'Target user ID is required.' });
-    }
-    // Mock matching logic: 30% chance of a mutual match
-    const isMatched = Math.random() < 0.3;
-    res.json({
-        data: {
-            action: 'LIKE',
-            targetUserId,
-            matched: isMatched,
-            matchId: isMatched ? `mtc_${Date.now()}` : null
-        }
+    // 模拟 30% 概率触发相互匹配成功
+    const isMatch = Math.random() > 0.7;
+    const matchId = isMatch ? `match_${Date.now()}` : null;
+
+    console.log(`[ALGO] User ${req.user.id} liked ${targetUserId}. Match=${isMatch}`);
+
+    res.status(200).json({
+        data: { matched: isMatch, matchId }
     });
 });
 
-// POST /api/v1/interactions/pass
-router.post('/pass', (req, res) => {
-    const { targetUserId } = req.body;
-    if (!targetUserId) {
-        return res.status(400).json({ error: 'Target user ID is required.' });
-    }
-    res.json({
-        data: {
-            action: 'PASS',
-            targetUserId,
-            success: true
-        }
-    });
+router.post('/pass', verifyToken, requireActiveStatus, (req, res) => {
+    res.status(200).json({ success: true });
 });
 
-
-// Get admirers (mock)
-router.get('/admirers', (req, res) => {
-    res.json({
+router.get('/admirers', verifyToken, requireActiveStatus, (req, res) => {
+    // 模拟返回仰慕者列表
+    res.status(200).json({
         data: [
-            { userId: "usr_3", isBlurred: true },
-            { userId: "usr_4", isBlurred: true }
+            { userId: "usr_admirer_1", isBlurred: true },
+            { userId: "usr_admirer_2", isBlurred: false }
         ]
     });
 });

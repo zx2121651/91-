@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
 
-// GET /api/v1/referrals/status
-router.get('/status', (req, res) => {
-    res.json({
+// Elite Referral System (The Velvet Rope Generator)
+router.get('/status', verifyToken, requireActiveStatus, (req, res) => {
+    // Top users get fewer invites to maintain scarcity
+    const remaining = req.user.role === 'ADMIN' ? 100 : 3;
+
+    res.status(200).json({
         data: {
-            inviteCode: "AURE-X79M-VQ2P",
-            remaining: 3,
-            message: "Aurelian 依靠会员的卓越品味而不断成长。"
+            inviteCode: "AUR_ELITE_007",
+            remaining: remaining
         }
     });
 });

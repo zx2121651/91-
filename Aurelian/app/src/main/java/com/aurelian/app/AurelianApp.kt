@@ -85,7 +85,7 @@ fun AurelianApp() {
             Modifier.padding(innerPadding)
         ) {
             composable("login") {
-                LoginScreen(onLoginSuccess = {
+                LoginScreen(onLoginSuccess = { token, status ->
                     navController.navigate(Screen.Discover.route) {
                         popUpTo("login") { inclusive = true }
                     }
