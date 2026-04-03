@@ -39,7 +39,7 @@ class AuthViewModel : ViewModel() {
                         _uiState.value = AuthUiState.Error("新会员必须输入高定邀请码")
                         return@launch
                     }
-                    val verifyResponse = NetworkClient.apiService.verifyInvite(VerifyInviteRequest(inviteCode))
+                    val verifyResponse = NetworkClient.apiService.verifyInvite("Bearer token", VerifyInviteRequest(inviteCode))
                     if (!verifyResponse.data.valid) {
                         _uiState.value = AuthUiState.Error("无效的邀请码")
                         return@launch

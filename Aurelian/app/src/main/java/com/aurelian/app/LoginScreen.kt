@@ -1,160 +1,62 @@
 package com.aurelian.app
-
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.lifecycle.viewmodel.compose.viewModel
-
-@OptIn(ExperimentalMaterial3Api::class)
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    viewModel: AuthViewModel = viewModel()
-) {
+fun LoginScreen(onLoginSuccess: (String, String) -> Unit) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var inviteCode by remember { mutableStateOf("") }
-    val uiState by viewModel.uiState.collectAsState()
-
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(uiState) {
-        when (uiState) {
-            is AuthUiState.Success -> onLoginSuccess()
-            is AuthUiState.Error -> {
-                val msg = (uiState as AuthUiState.Error).message
-                snackbarHostState.showSnackbar(msg)
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    var isLogoVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { delay(300); isLogoVisible = true }
+    Box(modifier = Modifier.fillMaxSize().background(DeepBlack), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+            AnimatedVisibility(visible = isLogoVisible, enter = fadeIn(animationSpec = tween(1500)), exit = fadeOut()) {
+                Text(text = "AURELIAN NIGHT", color = Gold, fontSize = 28.sp, fontWeight = FontWeight.Light, letterSpacing = 6.sp, textAlign = TextAlign.Center)
             }
-            else -> {}
-        }
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = DeepBlack
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "AURELIAN",
-                color = Gold,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = Typography.bodyLarge.fontFamily,
-                letterSpacing = 4.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "THE NIGHT IS YOURS",
-                color = Silver,
-                fontSize = 12.sp,
-                letterSpacing = 2.sp
-            )
-
-            Spacer(modifier = Modifier.height(64.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("电子邮箱 / 会员号", color = Color.Gray) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Gold,
-                    unfocusedBorderColor = Color(0xFF303030),
-                    focusedTextColor = Silver,
-                    unfocusedTextColor = Silver
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("密码", color = Color.Gray) },
-                visualTransformation = PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Gold,
-                    unfocusedBorderColor = Color(0xFF303030),
-                    focusedTextColor = Silver,
-                    unfocusedTextColor = Silver
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = inviteCode,
-                onValueChange = { inviteCode = it },
-                label = { Text("高定邀请码 (新会员)", color = Color.Gray) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Gold,
-                    unfocusedBorderColor = Color(0xFF303030),
-                    focusedTextColor = Silver,
-                    unfocusedTextColor = Silver
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Button(
-                onClick = { viewModel.login(email, password, inviteCode) },
-                colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(8.dp),
-                enabled = uiState != AuthUiState.Loading
-            ) {
-                if (uiState == AuthUiState.Loading) {
-                    CircularProgressIndicator(color = Black, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(80.dp))
+            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email or Concierge ID", color = Silver.copy(alpha = 0.5f)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Gold, unfocusedBorderColor = Silver.copy(alpha = 0.2f), focusedTextColor = Silver, unfocusedTextColor = Silver, cursorColor = Gold, focusedLabelColor = Gold), modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(24.dp))
+            if (errorMessage.isNotEmpty()) {
+                Text(text = errorMessage, color = Color.Red.copy(alpha = 0.8f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 16.dp))
+            }
+            Button(onClick = {
+                if (email.isBlank()) { errorMessage = "Identity required."; return@Button }
+                isLoading = true; errorMessage = ""
+                coroutineScope.launch {
+                    try {
+                        val response = NetworkClient.apiService.login(LoginRequest(email, "DUMMY_CODE"))
+                        val token = response.data.token
+                        val status = if (response.data.isNewUser) "PENDING" else "ACTIVE"
+                        onLoginSuccess(token, status)
+                    } catch (e: Exception) {
+                        errorMessage = "The sanctuary is currently unreachable."; isLoading = false
+                    }
+                }
+            }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Gold.copy(alpha = 0.15f), contentColor = Gold), shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Gold, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("验证身份", fontSize = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text(text = "REQUEST ENTRY", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(top = 16.dp)
-                    .clickable(enabled = uiState != AuthUiState.Loading) { viewModel.biometricLogin() }
-                    .padding(8.dp)
-            ) {
-                Icon(Icons.Default.Lock, contentDescription = "Biometric", tint = Gold, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("使用 Face ID / 指纹登录", color = Gold, fontSize = 14.sp)
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "ESTABLISHED MMXXIV",
-                color = Color.DarkGray,
-                fontSize = 10.sp,
-                letterSpacing = 1.5.sp
-            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(text = "By requesting entry, you agree to our strict code of conduct. Membership is highly curated.", color = Silver.copy(alpha = 0.4f), fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 16.sp, modifier = Modifier.padding(horizontal = 20.dp))
         }
     }
 }

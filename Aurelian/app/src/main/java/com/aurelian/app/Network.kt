@@ -18,7 +18,7 @@ data class LoginRequest(val email: String, val code: String)
 data class LoginData(val token: String, val isNewUser: Boolean)
 data class LoginResponse(val data: LoginData)
 data class VerifyInviteRequest(val inviteCode: String)
-data class VerifyInviteData(val valid: Boolean, val referrerId: String)
+data class VerifyInviteData(val valid: Boolean, val referrerId: String, val newToken: String?)
 data class VerifyInviteResponse(val data: VerifyInviteData)
 data class BiometricRequest(val deviceId: String, val signature: String)
 data class BaseResponse(val success: Boolean)
@@ -76,7 +76,7 @@ interface AurelianApiService {
     @POST("api/v1/auth/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
     @POST("api/v1/auth/verify-invite")
-    suspend fun verifyInvite(@Body request: VerifyInviteRequest): VerifyInviteResponse
+    suspend fun verifyInvite(@retrofit2.http.Header("Authorization") token: String, @Body request: VerifyInviteRequest): VerifyInviteResponse
     @POST("api/v1/auth/biometric")
     suspend fun biometricAuth(@Body request: BiometricRequest): BaseResponse
     // 2. Profile & Vetting
