@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -68,6 +69,7 @@ import coil.compose.AsyncImage
 @Composable
 fun MainFeedScreen(
     onNavigateToMasquerade: () -> Unit = {},
+    onNavigateToProfile: (String) -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
 ) {
 
@@ -152,7 +154,7 @@ fun MainFeedScreen(
                         .fillMaxSize()
                         .background(DeepBlack)
                 ) { page ->
-                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
                 }
 
                 matchedUser?.let { user ->
@@ -179,7 +181,7 @@ fun MainFeedScreen(
 }
 
 @Composable
-fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
+fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> Unit, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
     var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
@@ -281,6 +283,7 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 16.dp, end = 80.dp, bottom = 90.dp) // Leave MORE space for Right Actions to avoid overlap
+                .clickable { onNavigateToProfile(user.id) } // Clicking user info navigates to profile
         ) {
             Text(
                 text = user.name,
