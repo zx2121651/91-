@@ -1,0 +1,1 @@
+fun MainFeedScreen(onNavigateToEvents: () -> Unit = {}, onNavigateToProfile: (String) -> Unit = {}, onNavigateToMasquerade: () -> Unit = {}, onNavigateToPublish: () -> Unit = {}) -> Unit = {},

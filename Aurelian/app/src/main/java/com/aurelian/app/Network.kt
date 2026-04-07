@@ -72,6 +72,10 @@ data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
 data class ConfirmMediaRequest(val mediaId: String)
 data class ConfirmMediaResponse(val success: Boolean, val processing: Boolean)
 
+data class PublishVideoRequest(val title: String, val bio: String, val mediaId: String)
+data class PublishVideoResponse(val success: Boolean, val message: String)
+
+
 data class HookupCard(
     val userId: String,
     val name: String,
@@ -159,6 +163,11 @@ interface AurelianApiService {
     suspend fun sendHookupRequest(@Body request: HookupRequest): HookupRequestResponse
     @GET("api/v1/hookups/request/{id}")
     suspend fun getHookupRequestStatus(@Path("id") id: String): HookupRequestResponse
+
+    // 10. Publish Video
+    @POST("api/v1/feed/publish")
+    suspend fun publishVideo(@Body request: PublishVideoRequest): PublishVideoResponse
+
 }
 object NetworkClient {
     private const val BASE_URL = "http://10.0.2.2:3000/"

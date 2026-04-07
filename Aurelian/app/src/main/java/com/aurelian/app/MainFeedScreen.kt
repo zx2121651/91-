@@ -1,5 +1,12 @@
 package com.aurelian.app
 
+
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.rounded.AddCircle
+import androidx.compose.material.icons.filled.Favorite
+
 import androidx.compose.material.icons.filled.Star
 
 import android.net.Uri
@@ -72,6 +79,7 @@ fun MainFeedScreen(
     onNavigateToEvents: () -> Unit = {},
     onNavigateToMasquerade: () -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
+    onNavigateToPublish: () -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
 ) {
 
@@ -160,19 +168,22 @@ fun MainFeedScreen(
                         FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
                     }
 
-                    // Top Right Action: Exclusive Events Discovery
-                    IconButton(
-                        onClick = onNavigateToEvents,
+                    // 顶部右侧按钮容器
+                    Row(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(top = 48.dp, end = 16.dp) // Below status bar
+                            .padding(top = 48.dp, end = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            androidx.compose.material.icons.Icons.Default.DateRange,
-                            contentDescription = "Exclusive Events",
-                            tint = Gold.copy(alpha = 0.8f),
-                            modifier = Modifier.size(28.dp)
-                        )
+                        // 发布视频按钮
+                        IconButton(onClick = onNavigateToPublish) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Rounded.AddCircle,
+                                contentDescription = "发布动态",
+                                tint = Silver.copy(alpha = 0.9f),
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
                     }
                 }
 
@@ -277,7 +288,7 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> U
         ) {
             AsyncImage(
                 model = user.videoUrl,
-                contentDescription = "Cover Image",
+                contentDescription = "视频封面" /* 视频加载前的封面图片占位 */,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().background(DeepBlack)
             )
@@ -334,48 +345,98 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> U
             )
         }
 
-        // Minimalist Actions Overlay (Right Side)
+        // 极简高端的操作栏 (右侧)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 12.dp, bottom = 90.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(end = 16.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val iconTint = Gold.copy(alpha = 0.85f)
-            val iconSize = 26.dp
+            val iconTint = Color.White.copy(alpha = 0.95f)
+            val iconSize = 32.dp
 
-            IconButton(
-                onClick = onNavigateToMasquerade,
-                modifier = Modifier.size(40.dp)
+            // 1. 用户头像 / 关注
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { onNavigateToProfile(user.id) },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = iconTint, modifier = Modifier.size(iconSize))
+                // 圆形头像边框和占位
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(Color.DarkGray)
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(DeepBlack),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.AccountCircle, contentDescription = "主页", tint = iconTint, modifier = Modifier.size(40.dp))
+                }
             }
-            IconButton(
-                onClick = onLike,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(Icons.Default.FavoriteBorder, contentDescription = "喜欢", tint = iconTint, modifier = Modifier.size(iconSize))
+
+            // 2. 点赞（爱心）
+            var liked by remember { mutableStateOf(false) }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = {
+                        liked = !liked
+                        onLike()
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "心动",
+                        tint = if (liked) Color(0xFFE53935) else iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                Text(text = if (liked) "1.2w" else "1.1w", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
-            IconButton(
-                onClick = { Toast.makeText(context, "私密社交，禁止公开评论", Toast.LENGTH_SHORT).show() },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(Icons.Default.MailOutline, contentDescription = "评论", tint = iconTint, modifier = Modifier.size(iconSize))
+
+            // 3. 评论（私密）
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = { Toast.makeText(context, "私密社交，禁止公开评论，请直接私信", Toast.LENGTH_SHORT).show() },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Default.MailOutline, contentDescription = "私信", tint = iconTint, modifier = Modifier.size(iconSize))
+                }
+                Text(text = "私聊", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
-            IconButton(
-                onClick = {
-                    val sendIntent: Intent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "我正在 Aurelian Night 关注一位品位非凡的会员。快来开启您的私密高定之旅。")
-                        type = "text/plain"
-                    }
-                    val shareIntent = Intent.createChooser(sendIntent, "分享会员主页")
-                    context.startActivity(shareIntent)
-                },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(Icons.Default.Share, contentDescription = "分享", tint = iconTint, modifier = Modifier.size(iconSize))
+
+            // 4. 盲盒/探索
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = onNavigateToMasquerade,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = "午夜盲盒", tint = Gold, modifier = Modifier.size(iconSize))
+                }
+                Text(text = "探索", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            }
+
+            // 5. 分享
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(
+                    onClick = {
+                        val sendIntent: Intent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_TEXT, "我正在 Aurelian 发现一位品位非凡的会员。快来开启您的私密高定之旅。")
+                            type = "text/plain"
+                        }
+                        val shareIntent = Intent.createChooser(sendIntent, "分享会员主页")
+                        context.startActivity(shareIntent)
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = "分享", tint = iconTint, modifier = Modifier.size(iconSize))
+                }
+                Text(text = "分享", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
         }
     }
