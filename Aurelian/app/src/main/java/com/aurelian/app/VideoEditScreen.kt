@@ -2,6 +2,7 @@ package com.aurelian.app
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,9 +25,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
+@OptIn(UnstableApi::class)
 @Composable
 fun VideoEditScreen(
     videoUri: String,
@@ -43,12 +56,53 @@ fun VideoEditScreen(
     val filters = listOf("原画", "胶片(Film)", "黑白(B&W)", "电影感", "漏光(Leak)")
     var selectedFilter by remember { mutableStateOf(filters[0]) }
 
+    // ExoPlayer 及视频时长状态
+    var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
+    var videoDurationMs by remember { mutableStateOf(15000L) } // 默认 15s
+    var sliderRange by remember { mutableStateOf(0f..1f) }
+
+    DisposableEffect(videoUri) {
+        val player = ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(Uri.parse(videoUri)))
+            repeatMode = Player.REPEAT_MODE_ALL
+            addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_READY) {
+                        val dur = duration
+                        if (dur > 0) {
+                            videoDurationMs = dur
+                        }
+                    }
+                }
+            })
+            prepare()
+            play()
+        }
+        exoPlayer = player
+
+        onDispose {
+            player.release()
+            exoPlayer = null
+        }
+    }
+
+    // 当滑块改变时，调整播放器的播放区间
+    LaunchedEffect(sliderRange) {
+        exoPlayer?.let { player ->
+            val startMs = (sliderRange.start * videoDurationMs).toLong()
+            player.seekTo(startMs)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("高级编辑", color = Silver, fontWeight = FontWeight.Medium) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        exoPlayer?.stop()
+                        onBack()
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Silver)
                     }
                 },
@@ -62,7 +116,7 @@ fun VideoEditScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 视频预览区域 (模拟)
+            // 视频预览区域
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -72,11 +126,31 @@ fun VideoEditScreen(
                     .background(Color(0xFF1E1E1E)),
                 contentAlignment = Alignment.Center
             ) {
-                // TODO: 真实项目中这里应替换为 ExoPlayer 实例并应用所选滤镜
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "预览视频", tint = Silver, modifier = Modifier.size(64.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("应用滤镜: $selectedFilter", color = Gold, fontSize = 14.sp)
+                exoPlayer?.let { player ->
+                    AndroidView(
+                        factory = { ctx ->
+                            PlayerView(ctx).apply {
+                                this.player = player
+                                useController = false
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // 仅用于提示滤镜效果，后续需用 Media3 Effect 真正实现实时预览
+                if (selectedFilter != "原画") {
+                    Text(
+                        "预览滤镜: \$selectedFilter",
+                        color = Gold,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(DeepBlack.copy(alpha=0.6f), RoundedCornerShape(4.dp))
+                            .padding(4.dp)
+                    )
                 }
             }
 
@@ -112,7 +186,7 @@ fun VideoEditScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 编辑功能 Tab 区 (滤镜 / 配乐 / 裁剪)
+            // 编辑功能 Tab 区
             TabRow(
                 selectedTabIndex = listOf("滤镜", "配乐", "裁剪").indexOf(selectedTab),
                 containerColor = DeepBlack,
@@ -173,7 +247,28 @@ fun VideoEditScreen(
                         Text("高格调配乐库即将上线（古典 / 爵士 / 氛围电子）", color = Silver.copy(alpha = 0.5f), fontSize = 14.sp)
                     }
                     "裁剪" -> {
-                        Text("拖动以裁剪视频长度", color = Silver.copy(alpha = 0.5f), fontSize = 14.sp)
+                        Column(
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val startSec = (sliderRange.start * videoDurationMs / 1000f).roundToInt()
+                            val endSec = (sliderRange.endInclusive * videoDurationMs / 1000f).roundToInt()
+                            Text(
+                                "已选择: " + startSec + " 秒 - " + endSec + " 秒",
+                                color = Gold,
+                                fontSize = 14.sp
+                            )
+                            RangeSlider(
+                                value = sliderRange,
+                                onValueChange = { sliderRange = it },
+                                valueRange = 0f..1f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Gold,
+                                    activeTrackColor = Gold,
+                                    inactiveTrackColor = Color.DarkGray
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -187,15 +282,39 @@ fun VideoEditScreen(
                             return@Button
                         }
                         isPublishing = true
+                        exoPlayer?.pause()
+
                         coroutineScope.launch {
                             try {
+                                // 判断是否需要底层裁剪处理
+                                val needsTrim = sliderRange.start > 0.01f || sliderRange.endInclusive < 0.99f
+
+                                if (needsTrim) {
+                                    Toast.makeText(context, "正在进行专业影片剪辑...", Toast.LENGTH_SHORT).show()
+                                    val startMs = (sliderRange.start * videoDurationMs).toLong()
+                                    val endMs = (sliderRange.endInclusive * videoDurationMs).toLong()
+                                    val outputFile = File(context.cacheDir, "edited_video_\${System.currentTimeMillis()}.mp4")
+
+                                    // 开启后台真实裁剪
+                                    withContext(Dispatchers.IO) {
+                                        VideoEditorCore.trimVideo(
+                                            context = context,
+                                            inputUri = Uri.parse(videoUri),
+                                            startMs = startMs,
+                                            endMs = endMs,
+                                            outputFile = outputFile
+                                        )
+                                    }
+                                }
+
+                                // 发起 Mock 的网络请求发布
                                 val response = NetworkClient.apiService.publishVideo(
-                                    PublishVideoRequest(title, bio, "media_mock_camera_${System.currentTimeMillis()}")
+                                    PublishVideoRequest(title, bio, "media_\${System.currentTimeMillis()}")
                                 )
                                 Toast.makeText(context, response.message, Toast.LENGTH_LONG).show()
                                 onNavigateToFeed()
                             } catch (e: Exception) {
-                                Toast.makeText(context, "发布失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "剪辑或发布失败: \${e.message}", Toast.LENGTH_SHORT).show()
                             } finally {
                                 isPublishing = false
                             }
