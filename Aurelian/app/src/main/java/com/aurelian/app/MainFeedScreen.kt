@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -67,7 +69,9 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainFeedScreen(
+    onNavigateToEvents: () -> Unit = {},
     onNavigateToMasquerade: () -> Unit = {},
+    onNavigateToProfile: (String) -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
 ) {
 
@@ -146,13 +150,30 @@ fun MainFeedScreen(
                     if (currentIdx + 3 < users.size) viewModel.cancelPreload(users[currentIdx + 3].videoUrl)
                 }
 
-                VerticalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(DeepBlack)
-                ) { page ->
-                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                Box(modifier = Modifier.fillMaxSize()) {
+                    VerticalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(DeepBlack)
+                    ) { page ->
+                        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                    }
+
+                    // Top Right Action: Exclusive Events Discovery
+                    IconButton(
+                        onClick = onNavigateToEvents,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 48.dp, end = 16.dp) // Below status bar
+                    ) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Default.DateRange,
+                            contentDescription = "Exclusive Events",
+                            tint = Gold.copy(alpha = 0.8f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
                 matchedUser?.let { user ->
@@ -179,7 +200,7 @@ fun MainFeedScreen(
 }
 
 @Composable
-fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
+fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> Unit, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
     var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
@@ -281,6 +302,7 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToMasquerade: () -> Unit
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 16.dp, end = 80.dp, bottom = 90.dp) // Leave MORE space for Right Actions to avoid overlap
+                .clickable { onNavigateToProfile(user.id) } // Clicking user info navigates to profile
         ) {
             Text(
                 text = user.name,
