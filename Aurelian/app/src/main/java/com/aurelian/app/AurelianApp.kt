@@ -94,7 +94,7 @@ fun AurelianApp() {
                 })
             }
 
-            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }, onNavigateToPublish = { navController.navigate("publish_video") }) }
+            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }, onNavigateToPublish = { navController.navigate("camera") }) }
             composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { navController.navigate("profile") }) }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
@@ -142,8 +142,28 @@ fun AurelianApp() {
             composable("subscription") {
                 SubscriptionScreen(onBack = { navController.popBackStack() })
             }
-            composable("publish_video") {
-                PublishVideoScreen(onBack = { navController.popBackStack() })
+            composable("camera") {
+                CameraScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToEdit = { videoUri ->
+                        navController.navigate("video_edit/${java.net.URLEncoder.encode(videoUri, "UTF-8")}")
+                    }
+                )
+            }
+            composable(
+                route = "video_edit/{videoUri}",
+                arguments = listOf(navArgument("videoUri") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+                VideoEditScreen(
+                    videoUri = videoUri,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToFeed = {
+                        navController.navigate(Screen.Discover.route) {
+                            popUpTo(Screen.Discover.route) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
     }
