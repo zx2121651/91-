@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -68,6 +69,7 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainFeedScreen(
+    onNavigateToEvents: () -> Unit = {},
     onNavigateToMasquerade: () -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
@@ -148,13 +150,30 @@ fun MainFeedScreen(
                     if (currentIdx + 3 < users.size) viewModel.cancelPreload(users[currentIdx + 3].videoUrl)
                 }
 
-                VerticalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(DeepBlack)
-                ) { page ->
-                    FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                Box(modifier = Modifier.fillMaxSize()) {
+                    VerticalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(DeepBlack)
+                    ) { page ->
+                        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                    }
+
+                    // Top Right Action: Exclusive Events Discovery
+                    IconButton(
+                        onClick = onNavigateToEvents,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 48.dp, end = 16.dp) // Below status bar
+                    ) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Default.DateRange,
+                            contentDescription = "Exclusive Events",
+                            tint = Gold.copy(alpha = 0.8f),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
 
                 matchedUser?.let { user ->

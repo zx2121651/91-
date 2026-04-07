@@ -100,13 +100,9 @@ fun AurelianApp() {
                 })
             }
             composable(Screen.Events.route) {
-                EventsScreen(onNavigateToEventDetails = { eventId ->
-                    if (eventId == "evt_2") {
-                        navController.navigate("tea_ceremony")
-                    } else {
-                        navController.navigate("eventDetails/${java.net.URLEncoder.encode(eventId, "UTF-8")}")
-                    }
-                })
+                EventsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
