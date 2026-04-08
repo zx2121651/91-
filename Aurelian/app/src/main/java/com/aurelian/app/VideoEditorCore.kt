@@ -92,6 +92,7 @@ object VideoEditorCore {
         endMs: Long,
         filterName: String,
         watermarkText: String?,
+        audioTrack: String,
         outputFile: File
     ): String = suspendCancellableCoroutine { continuation ->
 

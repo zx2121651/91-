@@ -56,6 +56,9 @@ fun VideoEditScreen(
     val filters = listOf("原画", "胶片(Film)", "黑白(B&W)", "电影感", "漏光(Leak)")
     var selectedFilter by remember { mutableStateOf(filters[0]) }
 
+    val audioTracks = listOf("原声", "古典弦乐", "慵懒爵士", "深夜黑胶", "氛围电子")
+    var selectedAudio by remember { mutableStateOf(audioTracks[0]) }
+
     // ExoPlayer 及视频时长状态
     var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
     var videoDurationMs by remember { mutableStateOf(15000L) } // 默认 15s
@@ -253,7 +256,28 @@ fun VideoEditScreen(
                         }
                     }
                     "配乐" -> {
-                        Text("高格调配乐库即将上线（古典 / 爵士 / 氛围电子）", color = Silver.copy(alpha = 0.5f), fontSize = 14.sp)
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(audioTracks) { trackName ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (selectedAudio == trackName) Color(0xFF333333) else Color(0xFF1E1E1E))
+                                        .border(
+                                            2.dp,
+                                            if (selectedAudio == trackName) Gold else Color.Transparent,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { selectedAudio = trackName },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(trackName, color = Silver, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        }
                     }
                     "裁剪" -> {
                         Column(
@@ -313,6 +337,7 @@ fun VideoEditScreen(
                                             endMs = endMs,
                                             filterName = selectedFilter,
                                             watermarkText = title,
+                                            audioTrack = selectedAudio,
                                             outputFile = outputFile
                                         )
                                     }
@@ -320,7 +345,7 @@ fun VideoEditScreen(
 
                                 // 发起 Mock 的网络请求发布
                                 val response = NetworkClient.apiService.publishVideo(
-                                    PublishVideoRequest(title, bio, "media_\${System.currentTimeMillis()}")
+                                    PublishVideoRequest(title, bio, "media_\${System.currentTimeMillis()}", selectedAudio)
                                 )
                                 Toast.makeText(context, response.message, Toast.LENGTH_LONG).show()
                                 onNavigateToFeed()

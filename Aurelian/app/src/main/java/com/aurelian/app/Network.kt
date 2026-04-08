@@ -72,7 +72,7 @@ data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
 data class ConfirmMediaRequest(val mediaId: String)
 data class ConfirmMediaResponse(val success: Boolean, val processing: Boolean)
 
-data class PublishVideoRequest(val title: String, val bio: String, val mediaId: String)
+data class PublishVideoRequest(val title: String, val bio: String, val mediaId: String, val audioTrack: String = "原声")
 data class PublishVideoResponse(val success: Boolean, val message: String)
 
 

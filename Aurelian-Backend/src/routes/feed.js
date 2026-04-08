@@ -67,13 +67,13 @@ router.get('/videos', verifyToken, requireActiveStatus, (req, res) => {
 
 // 新增：短视频发布接口（用于前端模拟视频上传发布流程）
 router.post('/publish', verifyToken, requireActiveStatus, (req, res) => {
-    const { title, bio, mediaId } = req.body;
+    const { title, bio, mediaId, audioTrack } = req.body;
 
     if (!mediaId) {
          return res.status(400).json({ error: '必须提供有效的媒体文件ID' });
     }
 
-    console.log(`[FEED PUBLISH] 用户 ${req.user.id} 提交了新的短视频。媒体ID: ${mediaId}, 标题: ${title}`);
+    console.log(`[FEED PUBLISH] 用户 ${req.user.id} 提交了新的短视频。媒体ID: ${mediaId}, 标题: ${title}, 配乐: ${audioTrack}`);
 
     // Mock: 假设视频发布成功，并加入到后台处理队列
     res.status(200).json({
