@@ -87,6 +87,15 @@ fun VideoEditScreen(
     }
 
     // 当滑块改变时，调整播放器的播放区间
+
+    // 实时更新播放器的滤镜效果
+    LaunchedEffect(selectedFilter) {
+        exoPlayer?.let { player ->
+            val effects = VideoEditorCore.createVideoEffects(selectedFilter, null) // 预览时不加文字水印，仅滤镜
+            player.setVideoEffects(effects)
+        }
+    }
+
     LaunchedEffect(sliderRange) {
         exoPlayer?.let { player ->
             val startMs = (sliderRange.start * videoDurationMs).toLong()
@@ -139,17 +148,17 @@ fun VideoEditScreen(
                     )
                 }
 
-                // 仅用于提示滤镜效果，后续需用 Media3 Effect 真正实现实时预览
+                // 右上角状态标签
                 if (selectedFilter != "原画") {
                     Text(
-                        "预览滤镜: \$selectedFilter",
+                        "已应用: \$selectedFilter",
                         color = Gold,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .background(DeepBlack.copy(alpha=0.6f), RoundedCornerShape(4.dp))
-                            .padding(4.dp)
+                            .padding(12.dp)
+                            .background(DeepBlack.copy(alpha=0.8f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -159,7 +168,7 @@ fun VideoEditScreen(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("为这段瞬间命名...", color = Silver.copy(alpha = 0.5f)) },
+                    label = { Text("添加专属文字水印...", color = Silver.copy(alpha = 0.5f)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Gold,
                         unfocusedBorderColor = Color.DarkGray,
@@ -297,11 +306,13 @@ fun VideoEditScreen(
 
                                     // 开启后台真实裁剪
                                     withContext(Dispatchers.IO) {
-                                        VideoEditorCore.trimVideo(
+                                        VideoEditorCore.processVideo(
                                             context = context,
                                             inputUri = Uri.parse(videoUri),
                                             startMs = startMs,
                                             endMs = endMs,
+                                            filterName = selectedFilter,
+                                            watermarkText = title,
                                             outputFile = outputFile
                                         )
                                     }
