@@ -152,8 +152,9 @@ fun AurelianApp() {
             composable("camera") {
                 CameraScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToEdit = { videoUri ->
-                        navController.navigate("video_edit/${java.net.URLEncoder.encode(videoUri, "UTF-8")}/false")
+                    onNavigateToEdit = { videoUris ->
+                        val joinedUris = videoUris.joinToString(",")
+                        navController.navigate("video_edit/${java.net.URLEncoder.encode(joinedUris, "UTF-8")}/false")
                     }
                 )
             }

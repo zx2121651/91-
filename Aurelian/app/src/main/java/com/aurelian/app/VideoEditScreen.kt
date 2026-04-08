@@ -138,7 +138,9 @@ fun VideoEditScreen(
 
     DisposableEffect(videoUri) {
         val player = ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(videoUri)))
+            val uris = videoUri.split(",")
+            val mediaItems = uris.map { MediaItem.fromUri(Uri.parse(it)) }
+            setMediaItems(mediaItems)
             repeatMode = Player.REPEAT_MODE_ALL
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
