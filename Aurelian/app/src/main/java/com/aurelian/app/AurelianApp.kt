@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,7 +95,13 @@ fun AurelianApp() {
                 })
             }
 
-            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }, onNavigateToPublish = { navController.navigate("camera") }) }
+            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }, onNavigateToPublish = { isDraft ->
+                    if (isDraft) {
+                        navController.navigate("video_edit_draft")
+                    } else {
+                        navController.navigate("camera")
+                    }
+                }) }
             composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { navController.navigate("profile") }) }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
@@ -146,17 +153,22 @@ fun AurelianApp() {
                 CameraScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToEdit = { videoUri ->
-                        navController.navigate("video_edit/${java.net.URLEncoder.encode(videoUri, "UTF-8")}")
+                        navController.navigate("video_edit/${java.net.URLEncoder.encode(videoUri, "UTF-8")}/false")
                     }
                 )
             }
             composable(
-                route = "video_edit/{videoUri}",
-                arguments = listOf(navArgument("videoUri") { type = NavType.StringType })
+                route = "video_edit/{videoUri}/{isDraft}",
+                arguments = listOf(
+                    navArgument("videoUri") { type = NavType.StringType },
+                    navArgument("isDraft") { type = NavType.BoolType }
+                )
             ) { backStackEntry ->
                 val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+                val isDraft = backStackEntry.arguments?.getBoolean("isDraft") ?: false
                 VideoEditScreen(
                     videoUri = videoUri,
+                    isDraft = isDraft,
                     onBack = { navController.popBackStack() },
                     onNavigateToFeed = {
                         navController.navigate(Screen.Discover.route) {
@@ -164,6 +176,29 @@ fun AurelianApp() {
                         }
                     }
                 )
+            }
+
+            // 专门处理草稿恢复的跳转 (因为视频 URI 在草稿箱内获取)
+            composable("video_edit_draft") {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val draft = DraftManager.getDraft(context)
+                if (draft != null) {
+                    VideoEditScreen(
+                        videoUri = draft.videoUri,
+                        isDraft = true,
+                        onBack = { navController.popBackStack() },
+                        onNavigateToFeed = {
+                            navController.navigate(Screen.Discover.route) {
+                                popUpTo(Screen.Discover.route) { inclusive = true }
+                            }
+                        }
+                    )
+                } else {
+                    // 草稿读取失败回退
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                }
             }
         }
     }

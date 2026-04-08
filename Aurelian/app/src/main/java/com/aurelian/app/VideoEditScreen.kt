@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,15 +44,17 @@ import kotlin.math.roundToInt
 @Composable
 fun VideoEditScreen(
     videoUri: String,
+    isDraft: Boolean = false,
     onBack: () -> Unit,
     onNavigateToFeed: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     var title by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     var isPublishing by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf("滤镜") }
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     val filters = listOf("原画", "胶片(Film)", "黑白(B&W)", "电影感", "漏光(Leak)")
     var selectedFilter by remember { mutableStateOf(filters[0]) }
@@ -59,10 +62,79 @@ fun VideoEditScreen(
     val audioTracks = listOf("原声", "古典弦乐", "慵懒爵士", "深夜黑胶", "氛围电子")
     var selectedAudio by remember { mutableStateOf(audioTracks[0]) }
 
-    // ExoPlayer 及视频时长状态
     var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
-    var videoDurationMs by remember { mutableStateOf(15000L) } // 默认 15s
+    var videoDurationMs by remember { mutableStateOf(15000L) }
     var sliderRange by remember { mutableStateOf(0f..1f) }
+
+    var showDraftDialog by remember { mutableStateOf(false) }
+
+    // 初始化草稿恢复逻辑
+    LaunchedEffect(isDraft) {
+        if (isDraft) {
+            DraftManager.getDraft(context)?.let { draft ->
+                title = draft.title
+                bio = draft.bio
+                selectedFilter = draft.selectedFilter
+                selectedAudio = draft.selectedAudio
+                sliderRange = draft.sliderStart..draft.sliderEnd
+            }
+        }
+    }
+
+    // 拦截返回事件
+    val handleBackPress = {
+        // 如果内容有变动或者非空，则提示保存草稿
+        if (title.isNotBlank() || selectedFilter != "原画" || selectedAudio != "原声" || sliderRange.start > 0f || sliderRange.endInclusive < 1f) {
+            showDraftDialog = true
+        } else {
+            exoPlayer?.stop()
+            onBack()
+        }
+    }
+
+    BackHandler {
+        handleBackPress()
+    }
+
+    // 退出提示保存草稿的弹窗
+    if (showDraftDialog) {
+        AlertDialog(
+            onDismissRequest = { showDraftDialog = false },
+            title = { Text("保存草稿", color = Gold, fontWeight = FontWeight.Bold) },
+            text = { Text("您还有未完成的剪辑，是否保存到草稿箱以便下次继续？", color = Silver) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val draft = DraftData(
+                        videoUri = videoUri,
+                        title = title,
+                        bio = bio,
+                        selectedFilter = selectedFilter,
+                        selectedAudio = selectedAudio,
+                        sliderStart = sliderRange.start,
+                        sliderEnd = sliderRange.endInclusive,
+                        timestamp = System.currentTimeMillis()
+                    )
+                    DraftManager.saveDraft(context, draft)
+                    showDraftDialog = false
+                    exoPlayer?.stop()
+                    onBack()
+                }) {
+                    Text("保存", color = Gold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    DraftManager.clearDraft(context)
+                    showDraftDialog = false
+                    exoPlayer?.stop()
+                    onBack()
+                }) {
+                    Text("不保存", color = Color.Gray)
+                }
+            },
+            containerColor = Color(0xFF1B1B1B)
+        )
+    }
 
     DisposableEffect(videoUri) {
         val player = ExoPlayer.Builder(context).build().apply {
@@ -111,10 +183,7 @@ fun VideoEditScreen(
             TopAppBar(
                 title = { Text("高级编辑", color = Silver, fontWeight = FontWeight.Medium) },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        exoPlayer?.stop()
-                        onBack()
-                    }) {
+                    IconButton(onClick = handleBackPress) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Silver)
                     }
                 },
@@ -348,6 +417,7 @@ fun VideoEditScreen(
                                     PublishVideoRequest(title, bio, "media_\${System.currentTimeMillis()}", selectedAudio)
                                 )
                                 Toast.makeText(context, response.message, Toast.LENGTH_LONG).show()
+                                DraftManager.clearDraft(context)
                                 onNavigateToFeed()
                             } catch (e: Exception) {
                                 Toast.makeText(context, "剪辑或发布失败: \${e.message}", Toast.LENGTH_SHORT).show()

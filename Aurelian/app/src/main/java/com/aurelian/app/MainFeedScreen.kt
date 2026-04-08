@@ -79,12 +79,13 @@ fun MainFeedScreen(
     onNavigateToEvents: () -> Unit = {},
     onNavigateToMasquerade: () -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
-    onNavigateToPublish: () -> Unit = {},
+    onNavigateToPublish: (Boolean) -> Unit = {},
     viewModel: MainFeedViewModel = viewModel()
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
     var matchedUser by remember { mutableStateOf<User?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.matchEvent.collect { user ->
@@ -175,8 +176,43 @@ fun MainFeedScreen(
                             .padding(top = 48.dp, end = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // 草稿提示弹窗状态
+                        var showDraftPrompt by remember { mutableStateOf(false) }
+
+                        if (showDraftPrompt) {
+                            AlertDialog(
+                                onDismissRequest = { showDraftPrompt = false },
+                                title = { Text("未完成的动态", color = Gold, fontWeight = FontWeight.Bold) },
+                                text = { Text("您有一份未完成的高定剪辑草稿，是否继续编辑？", color = Silver) },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        showDraftPrompt = false
+                                        onNavigateToPublish(true) // 恢复草稿
+                                    }) {
+                                        Text("继续编辑", color = Gold)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = {
+                                        showDraftPrompt = false
+                                        DraftManager.clearDraft(context)
+                                        onNavigateToPublish(false) // 开启新拍摄
+                                    }) {
+                                        Text("放弃并重拍", color = Color.Gray)
+                                    }
+                                },
+                                containerColor = Color(0xFF1B1B1B)
+                            )
+                        }
+
                         // 发布视频按钮
-                        IconButton(onClick = onNavigateToPublish) {
+                        IconButton(onClick = {
+                            if (DraftManager.hasDraft(context)) {
+                                showDraftPrompt = true
+                            } else {
+                                onNavigateToPublish(false)
+                            }
+                        }) {
                             Icon(
                                 imageVector = androidx.compose.material.icons.Icons.Rounded.AddCircle,
                                 contentDescription = "发布动态",
