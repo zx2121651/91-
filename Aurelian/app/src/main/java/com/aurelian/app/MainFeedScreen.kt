@@ -37,6 +37,13 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.CircularProgressIndicator
 
+
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.lazy.LazyColumn
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
@@ -73,7 +80,7 @@ import androidx.compose.animation.fadeOut
 import coil.compose.AsyncImage
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MainFeedScreen(
     onNavigateToEvents: () -> Unit = {},
@@ -85,6 +92,8 @@ fun MainFeedScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     var matchedUser by remember { mutableStateOf<User?>(null) }
+    var showCommentsSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -166,7 +175,7 @@ fun MainFeedScreen(
                             .fillMaxSize()
                             .background(DeepBlack)
                     ) { page ->
-                        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) })
+                        FeedItem(user = users[page], isSelected = page == pagerState.currentPage, onNavigateToProfile = onNavigateToProfile, onNavigateToMasquerade = onNavigateToMasquerade, onLike = { viewModel.likeUser(users[page]) }, onShowComments = { showCommentsSheet = true })
                     }
 
                     // 顶部右侧按钮容器
@@ -247,7 +256,7 @@ fun MainFeedScreen(
 }
 
 @Composable
-fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> Unit, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit) {
+fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> Unit, onNavigateToMasquerade: () -> Unit, onLike: () -> Unit, onShowComments: () -> Unit) {
     val context = LocalContext.current
     var isVideoReady by remember { mutableStateOf(false) }
     var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
@@ -437,10 +446,10 @@ fun FeedItem(user: User, isSelected: Boolean, onNavigateToProfile: (String) -> U
             // 3. 评论（私密）
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
-                    onClick = { Toast.makeText(context, "私密社交，禁止公开评论，请直接私信", Toast.LENGTH_SHORT).show() },
+                    onClick = onShowComments,
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(Icons.Default.MailOutline, contentDescription = "私信", tint = iconTint, modifier = Modifier.size(iconSize))
+                    Icon(Icons.Default.MailOutline, contentDescription = "留言", tint = iconTint, modifier = Modifier.size(iconSize))
                 }
                 Text(text = "私聊", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }

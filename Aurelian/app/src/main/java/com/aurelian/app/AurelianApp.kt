@@ -95,14 +95,20 @@ fun AurelianApp() {
                 })
             }
 
-            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }, onNavigateToPublish = { isDraft ->
-                    if (isDraft) {
-                        navController.navigate("video_edit_draft")
-                    } else {
-                        navController.navigate("camera")
+            composable(Screen.Discover.route) {
+                MainFeedScreen(
+                    onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") },
+                    onNavigateToMasquerade = { navController.navigate("masquerade") },
+                    onNavigateToPublish = { isDraft ->
+                        if (isDraft) {
+                            navController.navigate("video_edit_draft")
+                        } else {
+                            navController.navigate("camera")
+                        }
                     }
-                }) }
-            composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { navController.navigate("profile") }) }
+                )
+            }
+            composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") }) }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
                     navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
@@ -117,7 +123,25 @@ fun AurelianApp() {
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     userId = "me",
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { userName ->
+                        navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
+                    },
+                    onNavigateToSettings = { navController.navigate("settings") }
+                )
+            }
+
+            composable(
+                route = "profile/{userId}",
+                arguments = listOf(androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val userId = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("userId") ?: "", "UTF-8")
+                ProfileScreen(
+                    userId = userId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { userName ->
+                        navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
+                    }
                 )
             }
 
