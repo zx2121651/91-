@@ -1,117 +1,186 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
+const Joi = require('joi');
+const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
 
-const hookupCards = [
-    {
-        userId: 'usr_901',
-        name: 'Nina, 24',
-        age: 24,
-        city: 'Shanghai',
-        bio: '夜跑、爵士吧、说走就走的周末。',
-        intent: 'Tonight',
-        tags: ['同城', '夜生活', '不尬聊'],
-        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80'
-    },
-    {
-        userId: 'usr_902',
-        name: 'K, 27',
-        age: 27,
-        city: 'Beijing',
-        bio: '偏爱有边界感、直接、真诚的连接。',
-        intent: 'Weekend',
-        tags: ['周末见面', '先聊天', '重视安全'],
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80'
-    },
-    {
-        userId: 'usr_903',
-        name: 'Mia, 26',
-        age: 26,
-        city: 'Shanghai',
-        bio: '周五晚餐 + 微醺聊天，重视礼貌和边界。',
-        intent: 'Weekend',
-        tags: ['餐酒', '轻社交', '先语音'],
-        avatarUrl: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=500&q=80'
-    },
-    {
-        userId: 'usr_904',
-        name: 'Leo, 29',
-        age: 29,
-        city: 'Shenzhen',
-        bio: '运动后吃夜宵，喜欢真实不套路。',
-        intent: 'Tonight',
-        tags: ['运动', '夜宵', '直接'],
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80'
-    }
-];
+const User = require('../models/User');
+const HookupRequest = require('../models/HookupRequest');
 
-const requestStore = new Map();
+const requestSchema = Joi.object({
+    targetUserId: Joi.string().required(),
+    note: Joi.string().max(200).allow('').default(''),
+    safeMode: Joi.boolean().default(true),
+    meetingType: Joi.string().valid('DRINK', 'DINNER', 'PARTY', 'CASUAL').required()
+});
 
-router.get('/cards', (req, res) => {
-    const city = (req.query.city || '').trim();
-    const intent = (req.query.intent || '').trim();
-    const limit = Math.min(parseInt(req.query.limit || '10', 10), 20);
-    const cursor = parseInt(req.query.cursor || '0', 10);
+/**
+ * 获取同城活跃的高定约会卡片
+ * 需要排除自己，并且剔除掉已经发送过请求、或者相互拒绝过的对象。
+ */
+router.get('/cards', verifyToken, requireActiveStatus, async (req, res) => {
+    try {
+        const city = req.query.city;
+        const intent = req.query.intent;
+        const limit = parseInt(req.query.limit) || 10;
+        const cursor = req.query.cursor;
 
-    let filtered = hookupCards;
-    if (city) {
-        filtered = filtered.filter((card) => card.city.toLowerCase() === city.toLowerCase());
-    }
-    if (intent) {
-        filtered = filtered.filter((card) => card.intent.toLowerCase() === intent.toLowerCase());
-    }
+        // 1. 查询当前用户已发起或收到的所有活跃请求的目标 ID
+        const activeRequests = await HookupRequest.find({
+            $or: [{ senderId: req.user.id }, { targetUserId: req.user.id }],
+            status: { $in: ['PENDING', 'ACCEPTED'] }
+        })
+        .select('senderId targetUserId')
+        .lean();
 
-    const start = Number.isNaN(cursor) ? 0 : cursor;
-    const end = start + (Number.isNaN(limit) ? 10 : limit);
-    const page = filtered.slice(start, end);
-    const nextCursor = end < filtered.length ? String(end) : null;
+        const excludedUserIds = activeRequests.flatMap(req => [req.senderId, req.targetUserId]);
+        excludedUserIds.push(req.user.id); // 排除自己
 
-    res.json({
-        data: page,
-        nextCursor,
-        meta: {
-            total: filtered.length,
-            city: city || null,
-            intent: intent || null
+        // 2. 构造聚合查询条件 (基于距离、城市、意图等)
+        const query = {
+            _id: { $nin: excludedUserIds },
+            status: 'ACTIVE' // 必须是已审核会员
+        };
+
+        if (city) {
+            query.location = { $regex: city, $options: 'i' };
         }
-    });
+
+        if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
+            query._id = { $lt: cursor };
+        }
+
+        // 3. 执行查询
+        const hookups = await User.find(query)
+            .sort({ _id: -1 })
+            .limit(limit)
+            .select('name minAgePreference location bio avatarUrl followersCount')
+            .lean();
+
+        // 4. 数据映射
+        const formattedCards = hookups.map(user => {
+            // 随机生成一些展示标签或意图（真实情况下意图应存在于用户的偏好设置里）
+            const age = user.minAgePreference || 25;
+            const intents = ['DRINK', 'DINNER', 'PARTY', 'CASUAL'];
+            const randomIntent = intents[Math.floor(Math.random() * intents.length)];
+
+            return {
+                userId: user._id.toString(),
+                name: user.name,
+                age: age,
+                city: user.location,
+                bio: user.bio,
+                intent: randomIntent,
+                tags: ['VIP', `粉丝 \${user.followersCount}`],
+                avatarUrl: user.avatarUrl
+            };
+        });
+
+        res.status(200).json({
+            data: formattedCards,
+            nextCursor: hookups.length === limit ? hookups[hookups.length - 1]._id.toString() : null,
+            meta: { total: hookups.length, city, intent }
+        });
+
+    } catch (error) {
+        console.error('[HOOKUPS] 获取卡片失败:', error);
+        res.status(500).json({ error: '暂时无法雷达搜寻，请稍后再试' });
+    }
 });
 
-router.post('/request', (req, res) => {
-    const { targetUserId, note, safeMode, meetingType } = req.body;
-    if (!targetUserId) {
-        return res.status(400).json({ error: 'targetUserId is required' });
+/**
+ * 发起速约请求
+ * 核心校验：对方不能有正在 PENDING 的对我发起的请求，我也不能重复发送。
+ */
+router.post('/request', verifyToken, requireActiveStatus, async (req, res) => {
+    try {
+        const { error, value } = requestSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
+        const { targetUserId, note, safeMode, meetingType } = value;
+        const senderId = req.user.id;
+
+        // 1. 业务校验：是否已有处理中/已接受的邀约
+        const existingRequest = await HookupRequest.findOne({
+            $or: [
+                { senderId, targetUserId, status: { $in: ['PENDING', 'ACCEPTED'] } },
+                { senderId: targetUserId, targetUserId: senderId, status: { $in: ['PENDING', 'ACCEPTED'] } }
+            ]
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ error: '您或对方已经发起过邀约，请先处理当前邀约。' });
+        }
+
+        // 2. 插入新邀约
+        // 设定过期时间为 24 小时后
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        const newRequest = new HookupRequest({
+            senderId,
+            targetUserId,
+            meetingType,
+            note,
+            safeMode,
+            expiresAt
+        });
+
+        await newRequest.save();
+
+        res.status(201).json({
+            data: {
+                requestId: newRequest._id.toString(),
+                targetUserId: targetUserId,
+                meetingType: meetingType,
+                note: note,
+                safeMode: safeMode,
+                status: newRequest.status,
+                createdAt: newRequest.createdAt.getTime()
+            },
+            message: '您的专属邀约已发送，请静候佳音。'
+        });
+
+    } catch (error) {
+        console.error('[HOOKUPS] 发送请求失败:', error);
+        res.status(500).json({ error: '邀约投递失败，您的管家正在修复' });
     }
-
-    const cleanedNote = (note || '').trim();
-    if (cleanedNote.length > 120) {
-        return res.status(400).json({ error: 'note must be <= 120 chars' });
-    }
-
-    const requestId = `hk_${Date.now()}`;
-    const payload = {
-        requestId,
-        targetUserId,
-        note: cleanedNote,
-        safeMode: safeMode !== false,
-        meetingType: meetingType || 'DRINK',
-        status: 'SENT',
-        createdAt: Date.now()
-    };
-
-    requestStore.set(requestId, payload);
-
-    res.json({ data: payload });
 });
 
-router.get('/request/:id', (req, res) => {
-    const data = requestStore.get(req.params.id);
-    if (!data) {
-        return res.status(404).json({ error: 'request not found' });
-    }
+/**
+ * 获取请求状态 (发送后轮询)
+ */
+router.get('/request/:id', verifyToken, requireActiveStatus, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
 
-    const elapsed = Date.now() - data.createdAt;
-    const status = elapsed > 10000 ? 'RESPONDED' : data.status;
-    res.json({ data: { ...data, status } });
+        const request = await HookupRequest.findOne({
+            _id: id,
+            $or: [{ senderId: userId }, { targetUserId: userId }]
+        }).lean();
+
+        if (!request) {
+            return res.status(404).json({ error: '邀约不存在或已被系统清理。' });
+        }
+
+        res.status(200).json({
+            data: {
+                requestId: request._id.toString(),
+                targetUserId: request.senderId.toString() === userId ? request.targetUserId.toString() : request.senderId.toString(),
+                meetingType: request.meetingType,
+                note: request.note,
+                safeMode: request.safeMode,
+                status: request.status,
+                createdAt: request.createdAt.getTime()
+            }
+        });
+
+    } catch (error) {
+        console.error('[HOOKUPS] 查询请求状态失败:', error);
+        res.status(500).json({ error: '查询失败' });
+    }
 });
 
 module.exports = router;
