@@ -32,7 +32,8 @@ fun ProfileScreen(
     userId: String,
     onNavigateBack: () -> Unit,
     onNavigateToChat: (String) -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToUserFeed: (String, Int) -> Unit = { _, _ -> }
 ) {
     // In a real app, you would fetch profile data from NetworkClient.apiService.getProfile(userId)
     // For this demo, we use high-end mock data matching the VIP feel.

@@ -127,7 +127,8 @@ fun AurelianApp() {
                     onNavigateToChat = { userName ->
                         navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
                     },
-                    onNavigateToSettings = { navController.navigate("settings") }
+                    onNavigateToSettings = { navController.navigate("settings") },
+                    onNavigateToUserFeed = { uid, index -> navController.navigate("user_feed/${java.net.URLEncoder.encode(uid, "UTF-8")}/$index") }
                 )
             }
 
@@ -141,7 +142,8 @@ fun AurelianApp() {
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToChat = { userName ->
                         navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
-                    }
+                    },
+                    onNavigateToUserFeed = { uid, index -> navController.navigate("user_feed/${java.net.URLEncoder.encode(uid, "UTF-8")}/$index") }
                 )
             }
 
@@ -153,6 +155,22 @@ fun AurelianApp() {
             composable("eventDetails/{eventId}") { backStackEntry ->
                 val eventId = backStackEntry.arguments?.getString("eventId")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
                 EventDetailsScreen(eventId = eventId, onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = "user_feed/{userId}/{index}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("index") { type = androidx.navigation.NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val userId = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("userId") ?: "me", "UTF-8")
+                val initialIndex = backStackEntry.arguments?.getInt("index") ?: 0
+                UserFeedScreen(
+                    userId = userId,
+                    initialIndex = initialIndex,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable("settings") {
                 SettingsScreen(onBack = { navController.popBackStack() })

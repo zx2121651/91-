@@ -110,7 +110,7 @@ interface AurelianApiService {
     suspend fun submitAssets(@Body request: SubmitAssetsRequest): SubmitAssetsResponse
     // 3. Feed & Matchmaking
     @GET("api/v1/feed/videos")
-    suspend fun getFeedVideos(): FeedResponse
+    suspend fun getFeedVideos(@Query("userId") userId: String? = null): FeedResponse
     @POST("api/v1/interactions/like")
     suspend fun likeUser(@Body request: LikeRequest): LikeResponse
     @POST("api/v1/interactions/pass")
