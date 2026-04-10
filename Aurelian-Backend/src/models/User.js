@@ -11,6 +11,9 @@ const UserSchema = new mongoose.Schema({
   location: { type: String, default: 'Unknown' },
   avatarUrl: { type: String, default: '' },
 
+  // 系统角色：'USER' (普通高定会员), 'ADMIN' (后台管家/管理员)
+  role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
+
   // 资产/高定认证状态：'PENDING', 'ACTIVE', 'REJECTED'
   status: { type: String, enum: ['PENDING', 'ACTIVE', 'REJECTED', 'BANNED'], default: 'PENDING' },
   membershipTier: { type: String, enum: ['STANDARD', 'GOLD', 'BLACK'], default: 'STANDARD' },
