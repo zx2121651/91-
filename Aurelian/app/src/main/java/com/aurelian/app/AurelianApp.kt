@@ -114,7 +114,19 @@ fun AurelianApp() {
                     navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
                 })
             }
-            composable(Screen.Hookups.route) { HookupsScreen() }
+            composable(Screen.Hookups.route) {
+                HookupsScreen(
+                    onNavigateToRequests = { navController.navigate("hookup_requests") }
+                )
+            }
+
+            composable("hookup_requests") {
+                HookupRequestsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") },
+                    onNavigateToChat = { userName -> navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}") }
+                )
+            }
             composable(Screen.Events.route) {
                 EventsScreen(
                     onNavigateBack = { navController.popBackStack() }

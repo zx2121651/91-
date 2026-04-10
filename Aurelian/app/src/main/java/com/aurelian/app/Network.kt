@@ -92,6 +92,12 @@ data class HookupCard(
 data class HookupsMeta(val total: Int, val city: String?, val intent: String?)
 data class HookupsResponse(val data: List<HookupCard>, val nextCursor: String?, val meta: HookupsMeta? = null)
 data class HookupRequest(val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String = "DRINK")
+
+data class HookupRequestItem(val requestId: String, val userId: String, val name: String, val avatarUrl: String, val bio: String, val location: String, val isVerified: Boolean, val meetingType: String, val note: String, val safeMode: Boolean, val status: String, val createdAt: Long, val expiresAt: Long)
+data class HookupRequestsResponse(val data: List<HookupRequestItem>)
+data class RespondHookupData(val conversationId: String?)
+data class RespondHookupResponse(val success: Boolean, val message: String, val data: RespondHookupData?)
+data class RespondHookupRequest(val action: String)
 data class HookupRequestData(val requestId: String, val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String, val status: String, val createdAt: Long)
 data class HookupRequestResponse(val data: HookupRequestData)
 interface AurelianApiService {
@@ -169,6 +175,11 @@ interface AurelianApiService {
     suspend fun sendHookupRequest(@Body request: HookupRequest): HookupRequestResponse
     @GET("api/v1/hookups/request/{id}")
     suspend fun getHookupRequestStatus(@Path("id") id: String): HookupRequestResponse
+    @GET("api/v1/hookups/requests")
+    suspend fun getHookupRequests(@Query("type") type: String = "RECEIVED", @Query("limit") limit: Int = 20): HookupRequestsResponse
+    @POST("api/v1/hookups/requests/{id}/respond")
+    suspend fun respondHookupRequest(@Path("id") id: String, @Body request: RespondHookupRequest): RespondHookupResponse
+
 
     // 10. Publish Video
     @POST("api/v1/feed/publish")
