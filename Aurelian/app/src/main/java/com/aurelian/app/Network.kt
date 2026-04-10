@@ -26,7 +26,10 @@ data class ProfileData(val id: String, val name: String, val membership: String,
 data class ProfileResponse(val data: ProfileData)
 data class UpdateProfileRequest(val bio: String)
 data class PreferencesRequest(val stealthMode: Boolean, val minAge: Int)
-data class SubmitAssetsRequest(val documentUrls: List<String>)
+data class SubmitAssetsRequest(val documentUrls: List<String>, val type: String = "IDENTITY", val notes: String = "")
+
+data class VettingStatusItem(val type: String, val status: String, val createdAt: String, val rejectReason: String?)
+data class VettingStatusResponse(val data: List<VettingStatusItem>)
 data class SubmitAssetsResponse(val status: String)
 data class LikeRequest(val targetUserId: String)
 data class LikeData(val matched: Boolean, val matchId: String?)
@@ -108,6 +111,9 @@ interface AurelianApiService {
     suspend fun updatePreferences(@Body request: PreferencesRequest): BaseResponse
     @POST("api/v1/vetting/submit-assets")
     suspend fun submitAssets(@Body request: SubmitAssetsRequest): SubmitAssetsResponse
+
+    @GET("api/v1/vetting/status")
+    suspend fun getVettingStatus(): VettingStatusResponse
     // 3. Feed & Matchmaking
     @GET("api/v1/feed/videos")
     suspend fun getFeedVideos(@Query("userId") userId: String? = null): FeedResponse

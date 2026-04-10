@@ -188,8 +188,22 @@ fun AurelianApp() {
 
                 SendInvitationScreen(onBack = { navController.popBackStack() }, onSend = { navController.popBackStack() })
             }
+
+            composable(
+                route = "vetting/{type}",
+                arguments = listOf(androidx.navigation.navArgument("type") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val type = backStackEntry.arguments?.getString("type") ?: "IDENTITY"
+                VettingScreen(
+                    initialType = type,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
             composable("subscription") {
-                SubscriptionScreen(onBack = { navController.popBackStack() })
+                SubscriptionScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToVetting = { type -> navController.navigate("vetting/$type") }
+                )
             }
             composable("camera") {
                 CameraScreen(
