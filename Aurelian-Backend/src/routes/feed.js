@@ -111,7 +111,7 @@ router.post('/publish', verifyToken, requireActiveStatus, async (req, res) => {
                 trimStartMs: value.trimStartMs,
                 trimEndMs: value.trimEndMs
             },
-            status: 'APPROVED' // 演示环境直接通过，跳过转码与人工机审
+            status: 'PENDING_REVIEW' // 视频上传后进入待审状态，管家团队将在后台审核后放入信息流
         });
 
         // 4. 保存记录
