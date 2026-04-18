@@ -46,7 +46,24 @@ data class ConversationsListResponse(val data: List<Conversation>)
 data class Admirer(val userId: String, val isBlurred: Boolean)
 data class Conversation(val convId: String, val lastMessage: String, val unreadCount: Int)
 data class SendMessageRequest(val convId: String, val content: String)
+data class Message(
+    val msgId: String,
+    val senderId: String,
+    val senderName: String,
+    val content: String,
+    val type: String,
+    val timestamp: String,
+    val status: String,
+    val isMe: Boolean,
+    val isEphemeral: Boolean = false,
+    val ephemeralDurationSeconds: Int = 0,
+    val readAt: String? = null,
+    val expiresAt: String? = null
+)
 data class MessagesListResponse(val data: List<Message>)
+
+data class ReadMessageResponseData(val readAt: String?, val expiresAt: String?)
+data class ReadMessageResponse(val success: Boolean, val data: ReadMessageResponseData)
 
 data class SendMessageData(val msgId: String, val timestamp: Long)
 data class SendMessageResponse(val data: SendMessageData)
@@ -138,6 +155,9 @@ interface AurelianApiService {
     suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): MessagesListResponse
     @POST("api/v1/messages/send")
     suspend fun sendMessage(@Body request: SendMessageRequest): SendMessageResponse
+
+    @POST("api/v1/messages/{msgId}/read")
+    suspend fun markMessageAsRead(@Path("msgId") msgId: String): ReadMessageResponse
     @POST("api/v1/invitations/send")
     suspend fun sendInvitation(@Body request: SendInviteRequest): SendInviteResponse
     @POST("api/v1/invitations/{id}/respond")

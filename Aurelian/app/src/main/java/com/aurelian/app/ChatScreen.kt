@@ -1,27 +1,28 @@
 package com.aurelian.app
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Email
+import androidx.material.icons.Icons
+import androidx.material.icons.filled.ArrowBack
+import androidx.material.icons.filled.MoreVert
+import androidx.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,202 +33,238 @@ fun ChatScreen(
     onNavigateToInvite: () -> Unit,
     viewModel: ChatViewModel = viewModel()
 ) {
+    var textState by remember { mutableStateOf("") }
+    var isEphemeralMode by remember { mutableStateOf(false) }
+
+    // Mock convId for this demo. In a real app, pass convId from argument.
+    val convId = "conv_12345"
+
     val uiState by viewModel.uiState.collectAsState()
-    var messageText by remember { mutableStateOf("") }
-    val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        viewModel.actionEvent.collect { message: String ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
+    LaunchedEffect(convId) {
+        viewModel.loadMessages(convId)
     }
 
-    LaunchedEffect(userName) {
-        // Here we use userName as convId. Ideally we pass convId via Navigation.
-        viewModel.loadMessages(userName)
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepBlack)
-    ) {
-        TopAppBar(
-            title = { Text(userName, color = Gold, fontWeight = FontWeight.Bold) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Gold)
-                }
-            },
-            actions = {
-                // Request Invitation Button (Placeholder for elite feature)
-                IconButton(onClick = onNavigateToInvite) {
-                    Icon(Icons.Default.Email, contentDescription = "高定私人邀约", tint = Gold)
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF131313))
-        )
-
-        when (val state = uiState) {
-            is ChatUiState.Loading -> {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Gold)
-                }
-            }
-            is ChatUiState.Error -> {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(text = "加载失败: ${state.message}", color = Color.Red)
-                }
-            }
-            is ChatUiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp),
-                    reverseLayout = false // In real app, might want to reverse for chat, but let's stick to standard top-down for now
-                ) {
-                    items(state.messages) { message ->
-                        MessageBubble(
-                            message = message.content,
-                            isMe = message.sender.id == "me",
-                            timestamp = message.timestamp,
-                            isInvitation = false, // In a real scenario, this flag would come from a richer Message model or subtype
-                            viewModel = viewModel
-                        )
-                    }
-                }
-            }
-        }
-
-        // Input Area
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1B1B1B))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .navigationBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = messageText,
-                onValueChange = { messageText = it },
-                placeholder = { Text("输入消息...", color = Color.Gray) },
-                modifier = Modifier.weight(1f),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = Silver,
-                    unfocusedTextColor = Silver,
-                    cursorColor = Gold
-                ),
-                shape = RoundedCornerShape(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = {
-                    if (messageText.isNotBlank()) {
-                        viewModel.sendMessage(messageText)
-                        messageText = ""
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(userName, color = Silver, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text("Active now", color = Gold, fontSize = 10.sp)
                     }
                 },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "Back", tint = Silver)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToInvite) {
+                        Icon(Icons.Default.MoreVert, "More", tint = Silver)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepBlack)
+            )
+        },
+        containerColor = Color(0xFF0A0A0A)
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (val state = uiState) {
+                is ChatUiState.Loading -> {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Gold)
+                    }
+                }
+                is ChatUiState.Error -> {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        Text(state.message, color = Color.Red)
+                    }
+                }
+                is ChatUiState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(16.dp),
+                        reverseLayout = true // 新消息在底部
+                    ) {
+                        items(state.messages) { msg ->
+                            EphemeralChatBubble(
+                                message = msg,
+                                viewModel = viewModel
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Chat Input Area
+            Row(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(Gold, RoundedCornerShape(24.dp))
+                    .fillMaxWidth()
+                    .background(DeepBlack)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Black)
+                // 阅后即猚开关
+                IconButton(
+                    onClick = { isEphemeralMode = !isEphemeralMode },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(if (isEphemeralMode) Color(0xFFE53935) else Color.DarkGray, CircleShape)
+                ) {
+                    Text("🔥", fontSize = 18.sp)
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                OutlinedTextField(
+                    value = textState,
+                    onValueChange = { textState = it },
+                    placeholder = {
+                        Text(
+                            if (isEphemeralMode) "燃烧的信息将不留痕迹..." else "留互您的品位...",
+                            color = if (isEphemeralMode) Color(0xFFE53935).copy(alpha=0.7f) else Color.Gray,
+                            fontSize = 14.sp
+                    )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isEphemeralMode) Color(0xFFE53935) else Gold,
+                        unfocusedBorderColor = Color.DarkGray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 40.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(
+                    onClick = {
+                        if (textState.isNotBlank()) {
+                            viewModel.sendMessage(convId, textState, isEphemeralMode)
+                            textState = ""
+                        }
+                    },
+                    modifier = Modifier.size(44.dp).background(if (isEphemeralMode) Color(0xFFEM3935) else Gold, CircleShape)
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = DeepBlack)
+                }
             }
         }
     }
 }
 
 @Composable
-fun MessageBubble(
-    message: String,
-    isMe: Boolean,
-    timestamp: String,
-    isInvitation: Boolean = false,
-    inviteType: String = "",
-    inviteTime: String = "",
-    inviteLocation: String = "",
-    inviteMessage: String = "",
-    viewModel: ChatViewModel
-) {
-    val alignment = if (isMe) Alignment.End else Alignment.Start
-    val bgColor = if (isMe) Color(0xFF3A2B15) else Color(0xFF262626) // Deep gold tint for 'me'
-    val textColor = if (isMe) Gold else Silver
+fun EphemeralChatBubble(message: Message, viewModel: ChatViewModel) {
+    var isVisible by remember { mutableStateOf(true) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalAlignment = alignment
+    // 触发消失判断
+    LaunchedEffect(message.expiresAt) {
+        if (message.expiresAt != null && viewModel.getRemainingTime(message.expiresAt) <= 0f) {
+            isVisible = false
+        }
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        exit = fadeOut(animationSpec = tween(500)) + shrinkVertically(animationSpec = tween(500))
     ) {
-        if (isInvitation) {
-            InvitationCard(inviteType, inviteTime, inviteLocation, inviteMessage, viewModel)
-        } else {
-            Box(
-                modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(
+        val alignment = if (message.isMe) Alignment.End else Alignment.Start
+        val bgColor = if (message.isMe) Color(0xFF1B1B1B) else Color(0xFF2A2A2A)
+
+        // 阅后即猚状态分析
+        val isBurnMode = message.isEphemeral
+        val isUnreadBurn = isBurnMode && message.expiresAt == null && message.readAt == null && !message.isMe
+
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            contentAlignment = if (message.isMe) Alignment.CenterEnd else Alignment.CenterStart
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if (message.isMe) Arrangement.End else Arrangement.Start
+            ) {
+
+                if (message.isMe && message.expiresAt != null) {
+                    BurncountdownIndicator(message.expiresAt, viewModel)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(
                             topStart = 16.dp,
                             topEnd = 16.dp,
-                            bottomStart = if (isMe) 16.dp else 4.dp,
-                            bottomEnd = if (isMe) 4.dp else 16.dp
+                            bottomStart = if (message.isMe) 16.dp else 4.dp,
+                            bottomEnd = if (message.isMe) 4.dp else 16.dp
+                        ))
+                        .background(if (isBurnMode) Color(0xF3B1010) else bgColor)
+                        .clickable(enabled = isUnreadBurn) {
+                            if (isUnreadBurn) {
+                                viewModel.triggerRead(message.msgId)
+                            }
+                        }
+                        .padding(12.dp)
+                ) {
+                    if (isUnreadBurn) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🔅", fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "点击查看 (燃烧倒数 ${message.ephemeralDurationSeconds} 秒)",
+                                color = Color(0xFFE53935),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = message.content,
+                            color = if (isBurnMode) Color(0xFFFFCDD2) else Silver,
+                            fontSize = 15.sp,
+                            modifier = Modifier.blur(
+                                radius = if (isUnreadBurn) 8.dp else 0.dp
+                            )
                         )
-                    )
-                    .background(bgColor)
-                    .padding(16.dp)
-            ) {
-                Text(text = message, color = textColor, fontSize = 16.sp, lineHeight = 24.sp)
+                    }
+                }
+
+                if (!message.isMe && message.expiresAt != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    BurncountdownIndicator(message.expiresAt, viewModel)
+                }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = timestamp, color = Color.DarkGray, fontSize = 12.sp)
     }
 }
 
 @Composable
-fun InvitationCard(type: String, time: String, location: String, message: String, viewModel: ChatViewModel) {
-    Box(
-        modifier = Modifier
-            .width(280.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF1B1B1B))
-            .padding(16.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Email, contentDescription = "Invitation", tint = Gold, modifier = Modifier.size(32.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("专属高定私人邀约", color = Gold, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-            Spacer(modifier = Modifier.height(16.dp))
+fun BurncountdownIndicator(expiresAtStr: String, viewModel: ChatViewModel) {
+    var remainingSec by remember { mutableStateOf(viewModel.getRemainingTime(expiresAtStr)) }
 
-            Text(type, color = Silver, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
+    LaunchedEffect(expiresAtStr) {
+        while (true) {
+            kotlinx.coroutines.delay(50) // 50ms 一帧
+            val rem = viewModel.getRemainingTime(expiresAtStr)
+            remainingSec = rem
+            if (rem <= 0f) break
+        }
+    }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = "Time", tint = Color.Gray, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(time, color = Silver, fontSize = 14.sp)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.DateRange, contentDescription = "Location", tint = Color.Gray, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(location, color = Silver, fontSize = 14.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(message, color = Color.Gray, fontSize = 14.sp, textAlign = TextAlign.Center, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                TextButton(onClick = { viewModel.respondToInvitation("inv_mock_id", "DECLINE") }) {
-                    Text("婉拒", color = Color.Gray)
-                }
-                Button(onClick = { viewModel.respondToInvitation("inv_mock_id", "ACCEPT") }, colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Black)) {
-                    Text("接受邀约", fontWeight = FontWeight.Bold)
-                }
-            }
+    if (remainingSec > 0f) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(24.dp)) {
+            CircularProgressIndicator(
+                progress = { (remainingSec / 5f).coerceIn(0f, 1f) },
+                color = Color(0xFFE53935),
+                strokeWidth = 2.dp,
+                modifier = Modifier.fillMaxSize()
+            )
+            Text("${remainingSec.toInt()}", color = Color.White, fontSize = 10.sp)
         }
     }
 }

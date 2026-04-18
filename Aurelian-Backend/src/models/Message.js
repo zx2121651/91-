@@ -17,6 +17,10 @@ const MessageSchema = new mongoose.Schema({
   isEphemeral: { type: Boolean, default: false },
   ephemeralDurationSeconds: { type: Number, default: 0 },
 
+  // 阅后即焚引擎的核心时间戳
+  readAt: { type: Date, default: null },
+  expiresAt: { type: Date, default: null }, // 如果是阅后即焚，这等于 readAt + duration
+
   // 消息状态：'SENT' (已发送), 'DELIVERED' (已送达), 'READ' (已读), 'RECALLED' (已撤回)
   status: { type: String, enum: ['SENT', 'DELIVERED', 'READ', 'RECALLED'], default: 'SENT' },
 
@@ -32,5 +36,10 @@ const MessageSchema = new mongoose.Schema({
 
 // 单聊消息列表通常根据会话ID和创建时间游标查询
 MessageSchema.index({ conversationId: 1, createdAt: -1 });
+
+
+// 核心原子特性：阅后即焚数据库层面的彻底销毁 (MongoDB TTL Index)
+// MongoDB 会自动定期扫描并删除 expiresAt 小于当前时间的文档
+MessageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Message', MessageSchema);
