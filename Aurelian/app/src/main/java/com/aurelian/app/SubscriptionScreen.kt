@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubscriptionScreen(onBack: () -> Unit) {
+fun SubscriptionScreen(onBack: () -> Unit, onNavigateToVetting: (String) -> Unit = {}) {
     val context = LocalContext.current
     Column(
         modifier = Modifier

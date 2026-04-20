@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,14 +95,38 @@ fun AurelianApp() {
                 })
             }
 
-            composable(Screen.Discover.route) { MainFeedScreen(onNavigateToMasquerade = { navController.navigate("masquerade") }) }
-            composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { navController.navigate("profile") }) }
+            composable(Screen.Discover.route) {
+                MainFeedScreen(
+                    onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") },
+                    onNavigateToMasquerade = { navController.navigate("masquerade") },
+                    onNavigateToPublish = { isDraft ->
+                        if (isDraft) {
+                            navController.navigate("video_edit_draft")
+                        } else {
+                            navController.navigate("camera")
+                        }
+                    }
+                )
+            }
+            composable(Screen.Matches.route) { MatchesScreen(onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") }) }
             composable(Screen.Messages.route) {
                 MessagesScreen(onNavigateToChat = { userName ->
                     navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
                 })
             }
-            composable(Screen.Hookups.route) { HookupsScreen() }
+            composable(Screen.Hookups.route) {
+                HookupsScreen(
+                    onNavigateToRequests = { navController.navigate("hookup_requests") }
+                )
+            }
+
+            composable("hookup_requests") {
+                HookupRequestsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProfile = { userId -> navController.navigate("profile/${java.net.URLEncoder.encode(userId, "UTF-8")}") },
+                    onNavigateToChat = { userName -> navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}") }
+                )
+            }
             composable(Screen.Events.route) {
                 EventsScreen(
                     onNavigateBack = { navController.popBackStack() }
@@ -110,7 +135,27 @@ fun AurelianApp() {
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     userId = "me",
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { userName ->
+                        navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
+                    },
+                    onNavigateToSettings = { navController.navigate("settings") },
+                    onNavigateToUserFeed = { uid, index -> navController.navigate("user_feed/${java.net.URLEncoder.encode(uid, "UTF-8")}/$index") }
+                )
+            }
+
+            composable(
+                route = "profile/{userId}",
+                arguments = listOf(androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val userId = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("userId") ?: "", "UTF-8")
+                ProfileScreen(
+                    userId = userId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToChat = { userName ->
+                        navController.navigate("chat/${java.net.URLEncoder.encode(userName, "UTF-8")}")
+                    },
+                    onNavigateToUserFeed = { uid, index -> navController.navigate("user_feed/${java.net.URLEncoder.encode(uid, "UTF-8")}/$index") }
                 )
             }
 
@@ -122,6 +167,22 @@ fun AurelianApp() {
             composable("eventDetails/{eventId}") { backStackEntry ->
                 val eventId = backStackEntry.arguments?.getString("eventId")?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: "活动"
                 EventDetailsScreen(eventId = eventId, onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = "user_feed/{userId}/{index}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("userId") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("index") { type = androidx.navigation.NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val userId = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("userId") ?: "me", "UTF-8")
+                val initialIndex = backStackEntry.arguments?.getInt("index") ?: 0
+                UserFeedScreen(
+                    userId = userId,
+                    initialIndex = initialIndex,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable("settings") {
                 SettingsScreen(onBack = { navController.popBackStack() })
@@ -139,8 +200,74 @@ fun AurelianApp() {
 
                 SendInvitationScreen(onBack = { navController.popBackStack() }, onSend = { navController.popBackStack() })
             }
+
+            composable(
+                route = "vetting/{type}",
+                arguments = listOf(androidx.navigation.navArgument("type") { type = androidx.navigation.NavType.StringType })
+            ) { backStackEntry ->
+                val type = backStackEntry.arguments?.getString("type") ?: "IDENTITY"
+                VettingScreen(
+                    initialType = type,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
             composable("subscription") {
-                SubscriptionScreen(onBack = { navController.popBackStack() })
+                SubscriptionScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToVetting = { type -> navController.navigate("vetting/$type") }
+                )
+            }
+            composable("camera") {
+                CameraScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToEdit = { videoUris ->
+                        val joinedUris = videoUris.joinToString(",")
+                        navController.navigate("video_edit/${java.net.URLEncoder.encode(joinedUris, "UTF-8")}/false")
+                    }
+                )
+            }
+            composable(
+                route = "video_edit/{videoUri}/{isDraft}",
+                arguments = listOf(
+                    navArgument("videoUri") { type = NavType.StringType },
+                    navArgument("isDraft") { type = NavType.BoolType }
+                )
+            ) { backStackEntry ->
+                val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+                val isDraft = backStackEntry.arguments?.getBoolean("isDraft") ?: false
+                VideoEditScreen(
+                    videoUri = videoUri,
+                    isDraft = isDraft,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToFeed = {
+                        navController.navigate(Screen.Discover.route) {
+                            popUpTo(Screen.Discover.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // 专门处理草稿恢复的跳转 (因为视频 URI 在草稿箱内获取)
+            composable("video_edit_draft") {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val draft = DraftManager.getDraft(context)
+                if (draft != null) {
+                    VideoEditScreen(
+                        videoUri = draft.videoUri,
+                        isDraft = true,
+                        onBack = { navController.popBackStack() },
+                        onNavigateToFeed = {
+                            navController.navigate(Screen.Discover.route) {
+                                popUpTo(Screen.Discover.route) { inclusive = true }
+                            }
+                        }
+                    )
+                } else {
+                    // 草稿读取失败回退
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                }
             }
         }
     }

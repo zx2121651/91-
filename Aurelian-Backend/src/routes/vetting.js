@@ -1,83 +1,100 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, requireActiveStatus } = require('../middleware/auth.middleware');
+const Joi = require('joi');
+const { verifyToken } = require('../middleware/auth.middleware');
 
-// Store active SSE connections (userId -> res object)
-// In production, use Redis Pub/Sub if multiple Node instances are running
-const activeVettingStreams = new Map();
+const VerificationRequest = require('../models/VerificationRequest');
+const User = require('../models/User');
 
-// 1. Submit Assets (Triggers UNDER_REVIEW state)
-router.post('/submit-assets', verifyToken, (req, res) => {
-    const { documentUrls } = req.body;
-    if (!documentUrls || documentUrls.length === 0) {
-        return res.status(400).json({ error: 'Asset documentation required for review.' });
-    }
-
-    // Move user to UNDER_REVIEW in real DB
-    res.status(200).json({ status: "UNDER_REVIEW" });
+const submitAssetsSchema = Joi.object({
+    // 支持批量上传身份/资产证明 URL
+    documentUrls: Joi.array().items(Joi.string().uri()).min(1).required().messages({
+        'array.min': '您必须提供至少一份认证材料。',
+        'any.required': '证明材料不可为空。'
+    }),
+    type: Joi.string().valid('ASSETS', 'IDENTITY').default('IDENTITY'),
+    notes: Joi.string().max(500).allow('').optional()
 });
 
-// 2. Server-Sent Events (SSE) Stream for real-time status updates
-// This allows the client's "Breathing Skeleton" to instantly unlock
-// the moment an admin or AI approves their application, without ugly polling.
-router.get('/stream', verifyToken, (req, res) => {
-    const userId = req.user.id;
-
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    // Send an initial heartbeat to confirm connection
-    res.write(`data: ${JSON.stringify({ event: 'CONNECTED', message: 'Awaiting Concierge Review...' })}\n\n`);
-
-    // Store the response object so we can push data to it later
-    activeVettingStreams.set(userId, res);
-    console.log(`[VETTING STREAM] User ${userId} is now waiting at the Velvet Rope.`);
-
-    // Handle client disconnect
-    req.on('close', () => {
-        console.log(`[VETTING STREAM] User ${userId} disconnected from the Velvet Rope.`);
-        activeVettingStreams.delete(userId);
-    });
-
-    // --- MOCKING THE APPROVAL PROCESS ---
-    // For demo purposes: If they wait for 10 seconds, we magically approve them
-    setTimeout(() => {
-        const stream = activeVettingStreams.get(userId);
-        if (stream) {
-            console.log(`[VETTING STREAM] Approving user ${userId} automatically after 10s...`);
-
-            // In a real app, this event tells the client to fetch a new JWT Token and transition to the Feed
-            stream.write(`data: ${JSON.stringify({
-                event: 'STATUS_UPDATED',
-                newStatus: 'ACTIVE',
-                message: 'Welcome to Aurelian Night.'
-            })}\n\n`);
-
-            // Optional: Close the stream after approval
-            // stream.end();
+/**
+ * 提交资产或身份认证资料
+ * 我们只允许具有基础 Token 的用户访问，甚至不需要 ACTIVE 状态，因为这是他们变成 ACTIVE 的必经之路。
+ */
+router.post('/submit-assets', verifyToken, async (req, res) => {
+    try {
+        const { error, value } = submitAssetsSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
         }
-    }, 10000);
+
+        const { documentUrls, type, notes } = value;
+        const userId = req.user.id;
+
+        // 1. 检查是否已经存在相同类型且正在审核中的请求
+        const existingRequest = await VerificationRequest.findOne({
+            userId: userId,
+            type: type,
+            status: 'PENDING'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ error: '您已经有一份相关的认证正在处理中，请勿重复提交。管家将尽快回复您。' });
+        }
+
+        // 2. 如果已经通过了，也可以拒绝重新提交
+        const approvedRequest = await VerificationRequest.findOne({
+            userId: userId,
+            type: type,
+            status: 'APPROVED'
+        });
+
+        if (approvedRequest) {
+            return res.status(400).json({ error: '您的资料已被认可，无需再次认证。' });
+        }
+
+        // 3. 记录新的审核请求
+        const newRequest = new VerificationRequest({
+            userId: userId,
+            type: type,
+            documentUrls: documentUrls,
+            notes: notes,
+            status: 'PENDING'
+        });
+
+        await newRequest.save();
+
+        // 可选：在这里将用户的状态更新为 'PENDING_REVIEW'
+        await User.findByIdAndUpdate(userId, { $set: { status: 'PENDING' } });
+
+        res.status(201).json({
+            success: true,
+            status: 'PENDING',
+            message: '您的高定审核材料已安全加密并移交管家部。通常审核会在 24 小时内完成。'
+        });
+
+    } catch (error) {
+        console.error('[VETTING] 资料提交失败:', error);
+        res.status(500).json({ error: '通道加载异常，请联系您的专属顾问' });
+    }
 });
 
-// 3. Admin Webhook to trigger approval manually
-// E.g., An admin clicks "Approve" on a dashboard
-router.post('/admin/approve/:userId', (req, res) => {
-    // SECURITY: This route MUST be protected by an ADMIN role middleware in production
-    const { userId } = req.params;
+/**
+ * 查询用户的当前审核状态 (可选：给前端展示进度)
+ */
+router.get('/status', verifyToken, async (req, res) => {
+    try {
+        const requests = await VerificationRequest.find({ userId: req.user.id })
+            .select('type status createdAt rejectReason')
+            .sort({ createdAt: -1 })
+            .lean();
 
-    const stream = activeVettingStreams.get(userId);
-    if (stream) {
-        stream.write(`data: ${JSON.stringify({
-            event: 'STATUS_UPDATED',
-            newStatus: 'ACTIVE',
-            message: 'Your application has been manually approved by the Concierge.'
-        })}\n\n`);
-        console.log(`[VETTING STREAM] Admin pushed APPROVAL to user ${userId}`);
-        res.status(200).json({ success: true, message: 'Approval pushed to client instantly.' });
-    } else {
-        res.status(404).json({ error: 'User is not currently connected to the vetting stream.' });
+        res.status(200).json({
+            data: requests
+        });
+
+    } catch (error) {
+        console.error('[VETTING] 查询审核状态失败:', error);
+        res.status(500).json({ error: '无法获取审核进度' });
     }
 });
 

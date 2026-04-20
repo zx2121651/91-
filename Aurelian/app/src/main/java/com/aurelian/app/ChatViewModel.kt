@@ -1,18 +1,15 @@
 package com.aurelian.app
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 sealed class ChatUiState {
     object Loading : ChatUiState()
@@ -23,74 +20,115 @@ sealed class ChatUiState {
 class ChatViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<ChatUiState>(ChatUiState.Loading)
-    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<ChatUiState> = _uiState
 
-    private var currentConvId: String = ""
+    private val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
+    private var currentConvId: String? = null
+
+    // Load initial messages
     fun loadMessages(convId: String) {
         currentConvId = convId
         viewModelScope.launch {
-            _uiState.value = ChatUiState.Loading
             try {
-                val response = NetworkClient.apiService.getMessages(convId, 20)
+                _uiState.value = ChatUiState.Loading
+                val response = NetworkClient.apiService.getMessages(convId, limit = 50)
                 _uiState.value = ChatUiState.Success(response.data)
+                startBurnEngine()
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error fetching messages", e)
-                _uiState.value = ChatUiState.Error(e.localizedMessage ?: "获取聊天记录失败")
+                _uiState.value = ChatUiState.Error("信使遇到阻碍：\${e.message}")
             }
         }
     }
 
-    fun sendMessage(content: String) {
-        if (content.isBlank() || currentConvId.isBlank()) return
-        val currentList = (uiState.value as? ChatUiState.Success)?.messages?.toMutableList() ?: mutableListOf()
-
-        // Optimistic UI update
-        val tempMsg = Message(
-            id = "temp_${System.currentTimeMillis()}",
-            sender = User(id = "me", name = "我", bio = "", location = ""),
-            content = content,
-            timestamp = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        )
-        currentList.add(tempMsg)
-        _uiState.value = ChatUiState.Success(currentList.toList())
-
+    // Send a message
+    fun sendMessage(convId: String, text: String, isEphemeral: Boolean) {
         viewModelScope.launch {
             try {
-                val response = NetworkClient.apiService.sendMessage(SendMessageRequest(currentConvId, content))
-                // Confirm UI with real ID if necessary, but list is already updated optimistically
-                val confirmedMsg = tempMsg.copy(id = response.data.msgId)
-                val idx = currentList.indexOf(tempMsg)
-                if (idx != -1) {
-                    currentList[idx] = confirmedMsg
-                    _uiState.value = ChatUiState.Success(currentList.toList())
-                }
+                // Optimistic UI update could go here, but for simplicity we rely on refresh
+                NetworkClient.apiService.sendMessage(
+                    SendMessageRequest(convId, text, isEphemeral = isEphemeral)
+                )
+                // Refresh
+                loadMessages(convId)
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error sending message", e)
-                // Remove pessimistic message on failure
-                currentList.remove(tempMsg)
-                _uiState.value = ChatUiState.Success(currentList.toList())
-                // Optional: Emit a snackbar event here
+                // handle error
             }
         }
     }
 
-    private val _actionEvent = MutableSharedFlow<String>()
-    val actionEvent = _actionEvent.asSharedFlow()
-
-    fun respondToInvitation(inviteId: String, action: String) {
-        viewModelScope.launch {
-            try {
-                val response = NetworkClient.apiService.respondToInvitation(inviteId, RespondInviteRequest(action))
-                if (response.data.status == "ACCEPTED") {
-                    _actionEvent.emit("您已接受邀约，期待相见")
-                } else if (response.data.status == "DECLINED") {
-                    _actionEvent.emit("您已婉拒邀约")
+    // Trigger read and burn countdown
+    fun triggerRead(msgId: String) {
+        val state = _uiState.value
+        if (state is ChatUiState.Success) {
+            viewModelScope.launch {
+                try {
+                    val res = NetworkClient.apiService.markMessageAsRead(msgId)
+                    if (res.success) {
+                        // Update local state with new expiresAt
+                        val updatedList = state.messages.map {
+                            if (it.msgId == msgId) {
+                                it.copy(readAt = res.data.readAt, expiresAt = res.data.expiresAt, status = "READ")
+                            } else {
+                                it
+                            }
+                        }
+                        _uiState.value = ChatUiState.Success(updatedList)
+                    }
+                } catch (e: Exception) {
+                    // silently fail
                 }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error responding to invite", e)
-                _actionEvent.emit("操作失败，网络异常")
             }
+        }
+    }
+
+    // Local loop to burn expired messages
+    private fun startBurnEngine() {
+        viewModelScope.launch {
+            while (true) {
+                delay(100) // Execute every 100ms
+                val state = _uiState.value
+                if (state is ChatUiState.Success) {
+                    val now = System.currentTimeMillis()
+                    var hasChanged = false
+
+                    val newList = state.messages.mapNotNull { msg ->
+                        if (msg.expiresAt != null) {
+                            try {
+                                val expireTime = sdf.parse(msg.expiresAt)?.time ?: Long.MAX_VALUE
+                                if (now >= expireTime) {
+                                    hasChanged = true
+                                    null // 彻底烧除移除出列表
+                                } else {
+                                    msg
+                                }
+                            } catch (e: Exception) {
+                                msg
+                            }
+                        } else {
+                            msg
+                        }
+                    }
+
+                    if (hasChanged) {
+                        _uiState.value = ChatUiState.Success(newList)
+                    }
+                }
+            }
+        }
+    }
+
+    fun getRemainingTime(expiresAtStr: String?): Float {
+        if (expiresAtStr == null) return 0f
+        return try {
+            val expireTime = sdf.parse(expiresAtStr)?.time ?: 0L
+            val now = System.currentTimeMillis()
+            val diff = (expireTime - now) / 1000f
+            if (diff < 0) 0f else diff
+        } catch (e: Exception) {
+            0f
         }
     }
 }

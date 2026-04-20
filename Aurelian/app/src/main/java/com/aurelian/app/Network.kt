@@ -26,7 +26,10 @@ data class ProfileData(val id: String, val name: String, val membership: String,
 data class ProfileResponse(val data: ProfileData)
 data class UpdateProfileRequest(val bio: String)
 data class PreferencesRequest(val stealthMode: Boolean, val minAge: Int)
-data class SubmitAssetsRequest(val documentUrls: List<String>)
+data class SubmitAssetsRequest(val documentUrls: List<String>, val type: String = "IDENTITY", val notes: String = "")
+
+data class VettingStatusItem(val type: String, val status: String, val createdAt: String, val rejectReason: String?)
+data class VettingStatusResponse(val data: List<VettingStatusItem>)
 data class SubmitAssetsResponse(val status: String)
 data class LikeRequest(val targetUserId: String)
 data class LikeData(val matched: Boolean, val matchId: String?)
@@ -43,7 +46,24 @@ data class ConversationsListResponse(val data: List<Conversation>)
 data class Admirer(val userId: String, val isBlurred: Boolean)
 data class Conversation(val convId: String, val lastMessage: String, val unreadCount: Int)
 data class SendMessageRequest(val convId: String, val content: String)
+data class Message(
+    val msgId: String,
+    val senderId: String,
+    val senderName: String,
+    val content: String,
+    val type: String,
+    val timestamp: String,
+    val status: String,
+    val isMe: Boolean,
+    val isEphemeral: Boolean = false,
+    val ephemeralDurationSeconds: Int = 0,
+    val readAt: String? = null,
+    val expiresAt: String? = null
+)
 data class MessagesListResponse(val data: List<Message>)
+
+data class ReadMessageResponseData(val readAt: String?, val expiresAt: String?)
+data class ReadMessageResponse(val success: Boolean, val data: ReadMessageResponseData)
 
 data class SendMessageData(val msgId: String, val timestamp: Long)
 data class SendMessageResponse(val data: SendMessageData)
@@ -72,6 +92,10 @@ data class UploadUrlResponse(val uploadUrl: String, val mediaId: String)
 data class ConfirmMediaRequest(val mediaId: String)
 data class ConfirmMediaResponse(val success: Boolean, val processing: Boolean)
 
+data class PublishVideoRequest(val title: String, val bio: String, val mediaId: String, val audioTrack: String = "原声")
+data class PublishVideoResponse(val success: Boolean, val message: String)
+
+
 data class HookupCard(
     val userId: String,
     val name: String,
@@ -85,6 +109,12 @@ data class HookupCard(
 data class HookupsMeta(val total: Int, val city: String?, val intent: String?)
 data class HookupsResponse(val data: List<HookupCard>, val nextCursor: String?, val meta: HookupsMeta? = null)
 data class HookupRequest(val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String = "DRINK")
+
+data class HookupRequestItem(val requestId: String, val userId: String, val name: String, val avatarUrl: String, val bio: String, val location: String, val isVerified: Boolean, val meetingType: String, val note: String, val safeMode: Boolean, val status: String, val createdAt: Long, val expiresAt: Long)
+data class HookupRequestsResponse(val data: List<HookupRequestItem>)
+data class RespondHookupData(val conversationId: String?)
+data class RespondHookupResponse(val success: Boolean, val message: String, val data: RespondHookupData?)
+data class RespondHookupRequest(val action: String)
 data class HookupRequestData(val requestId: String, val targetUserId: String, val note: String, val safeMode: Boolean, val meetingType: String, val status: String, val createdAt: Long)
 data class HookupRequestResponse(val data: HookupRequestData)
 interface AurelianApiService {
@@ -104,9 +134,12 @@ interface AurelianApiService {
     suspend fun updatePreferences(@Body request: PreferencesRequest): BaseResponse
     @POST("api/v1/vetting/submit-assets")
     suspend fun submitAssets(@Body request: SubmitAssetsRequest): SubmitAssetsResponse
+
+    @GET("api/v1/vetting/status")
+    suspend fun getVettingStatus(): VettingStatusResponse
     // 3. Feed & Matchmaking
     @GET("api/v1/feed/videos")
-    suspend fun getFeedVideos(): FeedResponse
+    suspend fun getFeedVideos(@Query("userId") userId: String? = null): FeedResponse
     @POST("api/v1/interactions/like")
     suspend fun likeUser(@Body request: LikeRequest): LikeResponse
     @POST("api/v1/interactions/pass")
@@ -122,6 +155,9 @@ interface AurelianApiService {
     suspend fun getMessages(@Path("id") id: String, @Query("limit") limit: Int): MessagesListResponse
     @POST("api/v1/messages/send")
     suspend fun sendMessage(@Body request: SendMessageRequest): SendMessageResponse
+
+    @POST("api/v1/messages/{msgId}/read")
+    suspend fun markMessageAsRead(@Path("msgId") msgId: String): ReadMessageResponse
     @POST("api/v1/invitations/send")
     suspend fun sendInvitation(@Body request: SendInviteRequest): SendInviteResponse
     @POST("api/v1/invitations/{id}/respond")
@@ -159,6 +195,16 @@ interface AurelianApiService {
     suspend fun sendHookupRequest(@Body request: HookupRequest): HookupRequestResponse
     @GET("api/v1/hookups/request/{id}")
     suspend fun getHookupRequestStatus(@Path("id") id: String): HookupRequestResponse
+    @GET("api/v1/hookups/requests")
+    suspend fun getHookupRequests(@Query("type") type: String = "RECEIVED", @Query("limit") limit: Int = 20): HookupRequestsResponse
+    @POST("api/v1/hookups/requests/{id}/respond")
+    suspend fun respondHookupRequest(@Path("id") id: String, @Body request: RespondHookupRequest): RespondHookupResponse
+
+
+    // 10. Publish Video
+    @POST("api/v1/feed/publish")
+    suspend fun publishVideo(@Body request: PublishVideoRequest): PublishVideoResponse
+
 }
 object NetworkClient {
     private const val BASE_URL = "http://10.0.2.2:3000/"

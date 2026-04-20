@@ -19,6 +19,7 @@ const masqueradeRoutes = require('./src/routes/masquerade');
 const referralsRoutes = require('./src/routes/referrals');
 const mediaRoutes = require('./src/routes/media');
 const hookupsRoutes = require('./src/routes/hookups');
+const adminRoutes = require('./src/routes/admin');
 
 // Socket Server initialization
 const { initSocketServer } = require('./src/websockets/socketServer');
@@ -59,6 +60,7 @@ app.use('/api/v1/masquerade', masqueradeRoutes);
 app.use('/api/v1/referrals', referralsRoutes);
 app.use('/api/v1/media', mediaRoutes);
 app.use('/api/v1/hookups', hookupsRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
