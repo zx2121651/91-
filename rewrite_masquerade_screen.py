@@ -1,4 +1,8 @@
-package com.aurelian.app
+import re
+
+file_path = "Aurelian/app/src/main/java/com/aurelian/app/MasqueradeScreen.kt"
+
+new_screen = """package com.aurelian.app
 
 import android.widget.Toast
 import androidx.compose.animation.*
@@ -253,3 +257,7 @@ fun MasqueradeCountdown(endTimeMs: Long) {
         )
     }
 }
+"""
+
+with open(file_path, "w") as f:
+    f.write(new_screen)
